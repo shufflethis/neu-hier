@@ -1,6 +1,6 @@
-# neu hier — Ankommens-Planer für Mensch + Agent 📦➡️🏙️
+# move to germany, lol 📦➡️🏙️
 
-**WebMCP-Challenge-Einreichung.** Neue Adresse? Du und dein KI-Agent baut
+**WebMCP Challenge entry — live at [movetogermany.lol](https://movetogermany.lol).** Neue Adresse? Du und dein KI-Agent baut
 **gemeinsam** die Grundversorgung auf: Supermarkt, Zahnarzt, Friseur, Bank &
 80 weitere Branchen — echte deutschlandweite Daten (OpenStreetMap / Overture
 Maps), nach Entfernung sortiert, auf einer gemeinsam editierbaren Karte + Plan.

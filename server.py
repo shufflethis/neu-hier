@@ -120,8 +120,8 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/llms.txt":
             body = (
-                "# neu hier — Ankommens-Planer (Mensch + Agent)\n\n"
-                "> Kollaborativer Umzugs-Planer über dem deutschlandweiten "
+                "# move to germany, lol — arrival planner (human + agent)\n\n"
+                "> movetogermany.lol: Kollaborativer Umzugs-Planer über dem deutschlandweiten "
                 "'in meiner Nähe'-Verzeichnisnetzwerk (80+ Branchen, OpenStreetMap/Overture-Daten). "
                 "Mensch und KI-Agent bauen gemeinsam die Grundversorgung für eine neue Adresse auf.\n\n"
                 "## WebMCP\n"
