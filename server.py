@@ -11,6 +11,7 @@ Start:  python3 server.py            (Port 8871, öffentliche APIs)
 """
 import json
 import os
+import threading
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
@@ -348,6 +349,28 @@ def index_markdown():
     )
 
 
+def track_event(name, path, user_agent="", props=None):
+    """Server-seitiges Plausible-Event (fire-and-forget) — zählt Agenten-
+    Zugriffe (MCP/REST), die das Client-Snippet nie sieht. Keine Payloads,
+    keine IDs — nur Event-Name, Pfad, Tool-Name."""
+    def _send():
+        try:
+            body = json.dumps({
+                "domain": "movetogermany.lol",
+                "name": name,
+                "url": f"https://movetogermany.lol{path}",
+                "props": props or {},
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                "https://analytics.polymarkt.de/api/event", data=body,
+                headers={"Content-Type": "application/json",
+                         "User-Agent": user_agent or "unknown-agent"})
+            urllib.request.urlopen(req, timeout=5)
+        except Exception:
+            pass
+    threading.Thread(target=_send, daemon=True).start()
+
+
 def ba_jobs(plz, what="", limit=5, radius=25):
     """Offizielle Jobsuche-API der Bundesagentur fuer Arbeit
     (bund.dev / bundesAPI, oeffentlicher Key "jobboerse-jobsuche")."""
@@ -608,6 +631,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         if method == "tools/call":
             params = req.get("params") or {}
+            track_event("mcp_call", "/mcp", self.headers.get("User-Agent", ""),
+                        {"tool": params.get("name", "")})
             result = mcp_call(params.get("name", ""), params.get("arguments"))
             self._send_mcp(json.dumps({"jsonrpc": "2.0", "id": rid, "result": {
                 "content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False)}],
@@ -623,6 +648,12 @@ class Handler(BaseHTTPRequestHandler):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
         q = urllib.parse.parse_qs(parsed.query)
+
+        if (path.startswith("/api/") and self.command == "GET"
+                and not self.headers.get("Sec-Fetch-Mode")):
+            # Kein Sec-Fetch-Header = kein Browser = Agent/curl/Server
+            track_event("api_call", path, self.headers.get("User-Agent", ""),
+                        {"endpoint": path})
 
         if path == "/":
             if wants_markdown(self.headers.get("Accept", "")):

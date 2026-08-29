@@ -13,6 +13,12 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://movetogermany.lol/og-image.png">
 <meta name="description" content="move to germany, lol — because the paperwork is enough drama. You and your AI agent build your everyday essentials together: supermarket, doctors, dentist & 80 more categories — real data, sorted by distance.">
+<!-- Privacy-friendly analytics by Plausible -->
+<script async src="https://analytics.polymarkt.de/js/pa-pMZt114Df7skLhsx_hNxF.js"></script>
+<script>
+  window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+  plausible.init()
+</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/icon-32.png" sizes="32x32" type="image/png">
 <link rel="icon" href="/icon-192.png" sizes="192x192" type="image/png">
@@ -990,8 +996,18 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
   ];
   window.__mc = mc;
   const A = (text) => addActivity("agent", text);
+  /* Jede Tool-Ausführung als privacy-freundliches Event (nur Tool-NAME, keine Argumente). */
+  const _register = mc.registerTool.bind(mc);
+  const mcReg = (desc, opts) => {
+    const ex = desc.execute;
+    desc.execute = async function (...args) {
+      try { if (window.plausible) plausible("webmcp_tool", { props: { tool: desc.name } }); } catch (e) {}
+      return ex.apply(this, args);
+    };
+    return _register(desc, opts);
+  };
 
-  mc.registerTool({
+  mcReg({
     name: "list_categories",
     icons: window.TOOL_ICONS,
     description: "List all 80+ business categories of the underlying German directory network " +
@@ -1003,7 +1019,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
       categories: state.categories.map(c => ({ slug: c.slug, label_de: c.label, label_en: c.label_en, emoji: c.emoji })) }),
   });
 
-  mc.registerTool({
+  mcReg({
     name: "get_profile",
     icons: window.TOOL_ICONS,
     description: "Read the shared arrival profile: household (solo/couple/family), pet, language needs " +
@@ -1016,7 +1032,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     execute: async () => T({ profile: state.profile, summary: profileSummary() || null }),
   });
 
-  mc.registerTool({
+  mcReg({
     name: "set_profile",
     icons: window.TOOL_ICONS,
     description: "Update the shared arrival profile (partial update; only provided fields change). " +
@@ -1043,7 +1059,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     },
   });
 
-  mc.registerTool({
+  mcReg({
     name: "set_home_plz",
     icons: window.TOOL_ICONS,
     description: "Set the user's new home postal code (German PLZ) — the center of all searches. " +
@@ -1054,7 +1070,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     execute: async ({ plz }) => { await setHome(plz); A(t("actplz").replace("{x}", plz)); return T({ ok: true, plz }); },
   });
 
-  mc.registerTool({
+  mcReg({
     name: "find_nearby",
     icons: window.TOOL_ICONS,
     description: "Search the closest providers of ONE category around the configured PLZ and render them " +
@@ -1074,7 +1090,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     },
   });
 
-  mc.registerTool({
+  mcReg({
     name: "generate_starter_plan",
     icons: window.TOOL_ICONS,
     description: "The one-step relocation helper: searches the configured PLZ across the essential " +
@@ -1102,7 +1118,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     },
   });
 
-  mc.registerTool({
+  mcReg({
     name: "add_to_shortlist",
     icons: window.TOOL_ICONS,
     description: "Add one concrete provider from the current search results (find_nearby / " +
@@ -1125,7 +1141,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     },
   });
 
-  mc.registerTool({
+  mcReg({
     name: "remove_from_shortlist",
     icons: window.TOOL_ICONS,
     description: "Remove one entry from the shared plan (id from get_shortlist). Only when the user " +
@@ -1141,7 +1157,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     },
   });
 
-  mc.registerTool({
+  mcReg({
     name: "get_shortlist",
     icons: window.TOOL_ICONS,
     description: "Read the shared plan including the user's handwritten NOTES and who created each " +
@@ -1151,7 +1167,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     execute: async () => T({ plz: state.plz, items: state.shortlist }),
   });
 
-  mc.registerTool({
+  mcReg({
     name: "set_note",
     icons: window.TOOL_ICONS,
     description: "Write or update a note on a plan entry (e.g. 'book an appointment', 'open till 6pm " +
@@ -1169,7 +1185,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     },
   });
 
-  mc.registerTool({
+  mcReg({
     name: "propose_appointment",
     icons: window.TOOL_ICONS,
     description: "Propose 1-3 concrete appointment slots for one provider on the plan (e.g. after the " +
@@ -1194,7 +1210,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     },
   });
 
-  mc.registerTool({
+  mcReg({
     name: "draft_outreach",
     icons: window.TOOL_ICONS,
     description: "Draft a ready-to-send first-contact message (email/phone text) to one provider on the " +
@@ -1215,7 +1231,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     },
   });
 
-  mc.registerTool({
+  mcReg({
     name: "find_bookable",
     icons: window.TOOL_ICONS,
     description: "Unified booking lookup: online-bookable service providers (hairdresser, massage, physio, " +
@@ -1238,7 +1254,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     },
   });
 
-  mc.registerTool({
+  mcReg({
     name: "find_jobs",
     icons: window.TOOL_ICONS,
     description: "Search real job openings around the configured PLZ via the OFFICIAL German Federal " +
@@ -1263,7 +1279,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     },
   });
 
-  mc.registerTool({
+  mcReg({
     name: "get_paperwork_checklist",
     icons: window.TOOL_ICONS,
     description: "Return the German bureaucracy starter pack: the ordered official steps after moving " +
@@ -1283,7 +1299,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     const canExport = state.shortlist.length > 0;
     if (canExport && !exportCtl) {
       exportCtl = new AbortController();
-      mc.registerTool({
+      mcReg({
         name: "export_plan",
         icons: window.TOOL_ICONS,
         description: "Return the shared plan as ready-to-use Markdown (for a chat summary, message or " +
@@ -1297,7 +1313,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     const canCompare = Object.keys(state.results).some(s => (state.results[s].records || []).length >= 2);
     if (canCompare && !compareCtl) {
       compareCtl = new AbortController();
-      mc.registerTool({
+      mcReg({
         name: "compare_candidates",
         icons: window.TOOL_ICONS,
         description: "Compare all currently loaded candidates of ONE category side by side (distance, " +
