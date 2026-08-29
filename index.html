@@ -95,6 +95,18 @@
   @keyframes flash { 0% { background: #f3eefe; } 100% { background: #fff; } }
   footer { margin-top: 36px; color: var(--muted); font-size: .84rem; text-align: center; }
   a { color: var(--accent); text-decoration: none; }
+  .feed { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 10px; }
+  .feed-item { font-size: .8rem; color: var(--muted); padding: 3px 0; border-left: 3px solid var(--line); padding-left: 8px; margin-bottom: 3px; }
+  .feed-item.agent { border-left-color: var(--agent); }
+  .feed-item.human { border-left-color: var(--accent); }
+  .prompts { margin-top: 10px; display: grid; gap: 6px; }
+  .prompts button { text-align: left; font-weight: 500; font-size: .85rem; background: #fdf6e3;
+                    color: var(--ink); border: 1px solid #eadfbe; padding: 8px 12px; }
+  .prompts button:hover { background: #f8eecb; }
+  table.compare { width: 100%; border-collapse: collapse; font-size: .85rem; background: #fff;
+                  border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  table.compare th, table.compare td { padding: 7px 9px; border-bottom: 1px solid var(--line); text-align: left; }
+  table.compare th { background: #f2f5f7; font-weight: 650; }
   .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
              clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
   @media (max-width: 860px) { .cols { grid-template-columns: 1fr; } .lang { position: static; margin-bottom: 8px; } }
@@ -112,6 +124,12 @@
     <h1 data-i18n="title">move to germany, lol</h1>
     <p class="tagline" data-i18n="tagline"></p>
     <div class="agentbar" data-i18n="agentbar"></div>
+    <div class="prompts" id="prompts">
+      <button onclick="copyPrompt(this)">💬 "I'm moving to Berlin, postal code 10115 — set me up with the essentials."</button>
+      <button onclick="copyPrompt(this)">💬 "Compare the hairdressers and pick the best rated one for me."</button>
+      <button onclick="copyPrompt(this)">💬 "Find me python developer jobs nearby and check my notes on the plan."</button>
+    </div>
+    <p class="hint" data-i18n="promptshint" style="margin-top:6px;">Try these with your agent — tap to copy.</p>
   </div>
 
   <section class="card hero">
@@ -193,9 +211,14 @@
       <h2 style="margin-top:0">📋 <span data-i18n="plan">My plan</span> <span id="count" style="color:var(--muted);font-weight:400"></span></h2>
       <p class="hint" data-i18n="planhint"></p>
       <div id="shortlist" aria-live="polite"></div>
-      <div style="display:flex; gap:8px; margin-top:12px;">
+      <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
         <button class="ghost" onclick="copyPlan(event)" data-i18n="copy">Copy plan (Markdown)</button>
+        <button class="ghost" onclick="sharePlan(event)" data-i18n="share">Share link</button>
         <button class="ghost" onclick="clearPlan()" data-i18n="clear">Clear</button>
+      </div>
+      <div class="feed" id="feed" aria-live="polite">
+        <div class="hint" data-i18n="feedhead" style="margin:0 0 4px;">Activity — who did what</div>
+        <div id="feed-items"><p class="empty" data-i18n="feedempty" style="padding:4px;">Nothing yet.</p></div>
       </div>
     </aside>
   </div>
@@ -264,6 +287,22 @@ const I18N = {
     why6: "Sundays are silent. Legally. Buy your groceries on Saturday or perish.",
     why7: "Cash only, sorry — the fax machine is still warming up.",
     why8: "Lost two world wars, working overtime to help avoid the third. You're welcome here.",
+    share: "Share link",
+    shared: "Link copied ✓",
+    sharedloaded: "Opened a shared plan",
+    feedhead: "Activity — who did what",
+    feedempty: "Nothing yet.",
+    promptshint: "Try these with your agent — tap to copy.",
+    actadd: "Added “{x}” to the plan",
+    actremove: "Removed “{x}” from the plan",
+    actnote: "Updated the note on “{x}”",
+    actplz: "Set home base to {x}",
+    actsearch: "Searched {x}",
+    actstarter: "Built the starter plan — {x} entries added",
+    actjobs: "Searched jobs — {x} openings found",
+    actcompare: "Compared {x} candidates",
+    comparehead: "side by side",
+    cname: "Name", creviews: "Reviews", cphone: "Phone",
     jobshead: "Jobs near your new home",
     jobstotal: "openings in the official database",
     jobsapply: "View ↗",
@@ -310,6 +349,22 @@ const I18N = {
     why6: "Sonntags ist Ruhe. Gesetzlich. Kauf samstags ein oder verhungere stilvoll.",
     why7: "Nur Bargeld, sorry — das Faxgerät wärmt noch auf.",
     why8: "Zwei Weltkriege verloren, seitdem Überstunden gegen den dritten. Du bist willkommen.",
+    share: "Link teilen",
+    shared: "Link kopiert ✓",
+    sharedloaded: "Geteilten Plan geöffnet",
+    feedhead: "Aktivität — wer hat was gemacht",
+    feedempty: "Noch nichts passiert.",
+    promptshint: "Probier die mit deinem Agenten — antippen zum Kopieren.",
+    actadd: "„{x}“ zum Plan hinzugefügt",
+    actremove: "„{x}“ aus dem Plan entfernt",
+    actnote: "Notiz an „{x}“ aktualisiert",
+    actplz: "Standort auf {x} gesetzt",
+    actsearch: "{x} gesucht",
+    actstarter: "Starterplan gebaut — {x} Einträge",
+    actjobs: "Jobs gesucht — {x} Stellen gefunden",
+    actcompare: "{x}-Kandidaten verglichen",
+    comparehead: "im Vergleich",
+    cname: "Name", creviews: "Bewertungen", cphone: "Telefon",
     jobshead: "Jobs rund um dein neues Zuhause",
     jobstotal: "Stellen in der offiziellen Datenbank",
     jobsapply: "Ansehen ↗",
@@ -330,7 +385,7 @@ function setLang(l) {
   document.getElementById("plz").placeholder = t("plzph");
   document.getElementById("lang-en").className = lang === "en" ? "on" : "";
   document.getElementById("lang-de").className = lang === "de" ? "on" : "";
-  renderChips(); renderResults(false); renderShortlist();
+  renderChips(); renderResults(false); renderShortlist(); renderActivity();
 }
 
 /* ============ State ============ */
@@ -342,7 +397,48 @@ const state = {
   selected: new Set(),
   jobs: null,
   catmap: {},
+  activity: [],
 };
+
+function addActivity(who, text) {
+  state.activity.unshift({ who, text, at: new Date().toLocaleTimeString() });
+  state.activity = state.activity.slice(0, 10);
+  renderActivity();
+}
+function renderActivity() {
+  const box = document.getElementById("feed-items");
+  if (!box) return;
+  if (!state.activity.length) { box.innerHTML = '<p class="empty" style="padding:4px;">' + t("feedempty") + "</p>"; return; }
+  box.innerHTML = state.activity.map(a =>
+    '<div class="feed-item ' + a.who + '">' + (a.who === "agent" ? "🤖 " : "🧑 ") + esc(a.text) +
+    ' <span style="opacity:.6">· ' + a.at + "</span></div>").join("");
+}
+function copyPrompt(btn) {
+  navigator.clipboard.writeText(btn.textContent.replace(/^💬\s*"|"$/g, "").replace(/^💬\s*„|“$/g, ""));
+  const t0 = btn.textContent; btn.textContent = "✓ " + t0.slice(2);
+  setTimeout(() => { btn.textContent = t0; }, 1200);
+}
+function sharePlan(ev) {
+  const payload = { plz: state.plz, shortlist: state.shortlist.map(x => ({
+    slug: x.slug, name: x.name, city: x.city, distance_km: x.distance_km,
+    phone: x.phone, website: x.website, note: x.note, by: x.by })) };
+  const hash = "#plan=" + btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  navigator.clipboard.writeText(location.origin + "/" + hash).then(() => {
+    const b = ev.target; const orig = b.textContent; b.textContent = t("shared");
+    setTimeout(() => { b.textContent = t("share"); }, 1500);
+  });
+}
+function loadSharedPlan() {
+  if (!location.hash.startsWith("#plan=")) return false;
+  try {
+    const d = JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(6)))));
+    state.plz = d.plz || null;
+    state.shortlist = (d.shortlist || []).map(x => ({ id: nextId++, emoji: "📍", label: x.slug, ...x }));
+    if (state.plz) document.getElementById("plz").value = state.plz;
+    addActivity("human", t("sharedloaded"));
+    return true;
+  } catch (e) { return false; }
+}
 let map, markerLayer;
 let nextId = 1;
 
@@ -395,6 +491,7 @@ function renderChips() {
 }
 
 function renderResults(flash) {
+  if (window.__refreshConditionalTools) window.__refreshConditionalTools();
   const box = document.getElementById("results");
   box.innerHTML = "";
   const slugs = Object.keys(state.results);
@@ -426,6 +523,7 @@ function renderResults(flash) {
 }
 
 function renderShortlist(flashId) {
+  if (window.__refreshConditionalTools) window.__refreshConditionalTools();
   const box = document.getElementById("shortlist");
   document.getElementById("count").textContent = state.shortlist.length ? "(" + state.shortlist.length + ")" : "";
   box.innerHTML = "";
@@ -534,16 +632,19 @@ function addFromResults(slug, idx) {
   if (state.shortlist.some(x => x.name === rec.name && x.slug === slug)) return;
   const it = makeItem(slug, rec, "human");
   state.shortlist.push(it); saveLocal(); renderShortlist(it.id);
+  addActivity("human", t("actadd").replace("{x}", rec.name));
 }
 
 function removeItem(id) {
+  const it = state.shortlist.find(x => x.id === id);
   state.shortlist = state.shortlist.filter(x => x.id !== id);
   saveLocal(); renderShortlist();
+  if (it) addActivity("human", t("actremove").replace("{x}", it.name));
 }
 
 function setNoteUI(id, note) {
   const it = state.shortlist.find(x => x.id === id);
-  if (it) { it.note = note; saveLocal(); }
+  if (it) { it.note = note; saveLocal(); addActivity("human", t("actnote").replace("{x}", it.name)); }
 }
 
 function planMarkdown() {
@@ -575,6 +676,8 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
   if (!window.isSecureContext || !mc || typeof mc.registerTool !== "function") return;
 
   const T = (o) => ({ content: [{ type: "text", text: typeof o === "string" ? o : JSON.stringify(o) }] });
+  window.__mc = mc;
+  const A = (text) => addActivity("agent", text);
 
   mc.registerTool({
     name: "list_categories",
@@ -594,7 +697,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     inputSchema: { type: "object", properties: {
       plz: { type: "string", pattern: "^[0-9]{5}$", description: "Five-digit German postal code, e.g. 10115" },
     }, required: ["plz"] },
-    execute: async ({ plz }) => { await setHome(plz); return T({ ok: true, plz }); },
+    execute: async ({ plz }) => { await setHome(plz); A(t("actplz").replace("{x}", plz)); return T({ ok: true, plz }); },
   });
 
   mc.registerTool({
@@ -611,6 +714,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
       const data = await api("/api/search?cat=" + encodeURIComponent(category) +
         "&plz=" + state.plz + "&limit=" + (limit || 5));
       state.results[category] = data; renderResults(true);
+      A(t("actsearch").replace("{x}", catLabel(category, category)));
       return T(data);
     },
   });
@@ -636,6 +740,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
         }
       }
       saveLocal(); renderResults(true); renderShortlist();
+      A(t("actstarter").replace("{x}", added));
       return T({ ok: true, added, plan: state.shortlist.map(x => ({ id: x.id, category: x.slug, name: x.name, distance_km: x.distance_km })) });
     },
   });
@@ -657,6 +762,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
       if (state.shortlist.some(x => x.name === name && x.slug === category)) return T("Already in the plan.");
       const it = makeItem(category, rec, "agent");
       state.shortlist.push(it); saveLocal(); renderShortlist(it.id);
+      A(t("actadd").replace("{x}", name));
       return T({ ok: true, id: it.id });
     },
   });
@@ -668,7 +774,12 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     inputSchema: { type: "object", properties: {
       id: { type: "integer", description: "Entry id from get_shortlist" },
     }, required: ["id"] },
-    execute: async ({ id }) => { removeItem(id); return T({ ok: true }); },
+    execute: async ({ id }) => {
+      const it = state.shortlist.find(x => x.id === id);
+      removeItem(id);
+      if (it) { state.activity.shift(); A(t("actremove").replace("{x}", it.name)); }
+      return T({ ok: true });
+    },
   });
 
   mc.registerTool({
@@ -692,6 +803,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
       const it = state.shortlist.find(x => x.id === id);
       if (!it) return T("Error: unknown id " + id);
       it.note = note; saveLocal(); renderShortlist(id);
+      A(t("actnote").replace("{x}", it.name));
       return T({ ok: true });
     },
   });
@@ -714,6 +826,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
       if (what) p.set("what", what);
       const data = await api("/api/jobs?" + p);
       renderJobs(data);
+      A(t("actjobs").replace("{x}", (data.total || 0).toLocaleString()));
       return T(data);
     },
   });
@@ -729,19 +842,71 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     execute: async () => T(await api("/api/paperwork")),
   });
 
-  mc.registerTool({
-    name: "export_plan",
-    description: "Return the shared plan as ready-to-use Markdown (for a chat summary, message or file). " +
-      "Read-only, changes nothing.",
-    inputSchema: { type: "object", properties: {} },
-    annotations: { readOnlyHint: true },
-    execute: async () => T(planMarkdown()),
-  });
+  /* --- Conditional tools: registered/unregistered with page state via
+         AbortController, so the agent's tool list mirrors what is actually
+         possible right now (spec lifecycle: aborting unregisters). --- */
+  let exportCtl = null, compareCtl = null;
+  window.__refreshConditionalTools = function () {
+    const canExport = state.shortlist.length > 0;
+    if (canExport && !exportCtl) {
+      exportCtl = new AbortController();
+      mc.registerTool({
+        name: "export_plan",
+        description: "Return the shared plan as ready-to-use Markdown (for a chat summary, message or " +
+          "file). Only registered while the plan has entries. Read-only, changes nothing.",
+        inputSchema: { type: "object", properties: {} },
+        annotations: { readOnlyHint: true },
+        execute: async () => T(planMarkdown()),
+      }, { signal: exportCtl.signal });
+    } else if (!canExport && exportCtl) { exportCtl.abort(); exportCtl = null; }
+
+    const canCompare = Object.keys(state.results).some(s => (state.results[s].records || []).length >= 2);
+    if (canCompare && !compareCtl) {
+      compareCtl = new AbortController();
+      mc.registerTool({
+        name: "compare_candidates",
+        description: "Compare all currently loaded candidates of ONE category side by side (distance, " +
+          "rating, review count, phone, website) and render the comparison table for the user. Only " +
+          "registered while a category has 2+ results. Use before recommending one. Read-only.",
+        inputSchema: { type: "object", properties: {
+          category: { type: "string", description: "Category slug with loaded results (see find_nearby)" },
+        }, required: ["category"] },
+        annotations: { readOnlyHint: true },
+        execute: async ({ category }) => {
+          const cat = state.results[category];
+          if (!cat || (cat.records || []).length < 2)
+            return T("Error: need 2+ loaded results for '" + category + "' — call find_nearby first.");
+          renderCompare(category);
+          A(t("actcompare").replace("{x}", catLabel(category, category)));
+          return T({ category, candidates: cat.records.map(r => ({
+            name: r.name, distance_km: r.distance_km, rating: r.gmaps_rating,
+            reviews: r.gmaps_reviews, phone: r.phone, website: r.website, city: r.city })) });
+        },
+      }, { signal: compareCtl.signal });
+    } else if (!canCompare && compareCtl) { compareCtl.abort(); compareCtl = null; }
+  };
+  window.__refreshConditionalTools();
 })();
+
+function renderCompare(category) {
+  const cat = state.results[category];
+  const box = document.getElementById("jobs");
+  box.hidden = false;
+  let html = '<div class="cathead">⚖️ ' + esc(catLabel(category, category)) + " — " + t("comparehead") +
+    '</div><div style="overflow-x:auto"><table class="compare"><tr><th>' +
+    [t("cname"), "km", "★", t("creviews"), t("cphone")].join("</th><th>") + "</th></tr>";
+  for (const r of cat.records) {
+    html += "<tr><td>" + esc(r.name) + (r.website ? ' <a href="' + esc(r.website) + '" target="_blank" rel="noopener">↗</a>' : "") +
+      "</td><td>" + (r.distance_km ?? "–") + "</td><td>" + (r.gmaps_rating ?? "–") +
+      "</td><td>" + (r.gmaps_reviews ?? "–") + "</td><td>" + esc(r.phone || "–") + "</td></tr>";
+  }
+  box.innerHTML = html + "</table></div>";
+}
 
 /* ============ Boot ============ */
 (async function boot() {
   loadLocal();
+  loadSharedPlan();
   setLang(lang);
   const cats = await api("/api/categories");
   state.categories = cats.categories;

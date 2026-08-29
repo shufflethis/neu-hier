@@ -60,10 +60,14 @@ not exist without WebMCP.
 
 ## How we implemented WebMCP
 
-- **11 imperative tools** via `document.modelContext.registerTool`:
+- **12 imperative tools** via `document.modelContext.registerTool`:
   `list_categories`, `set_home_plz`, `find_nearby`, `generate_starter_plan`,
   `add_to_shortlist`, `remove_from_shortlist`, `get_shortlist`, `set_note`,
-  `find_jobs`, `get_paperwork_checklist`, `export_plan`.
+  `find_jobs`, `get_paperwork_checklist`, plus two **conditional tools**
+  (`export_plan`, `compare_candidates`) that register and unregister with
+  page state via `AbortController` — the agent's tool list always mirrors
+  what is actually possible right now, exactly the lifecycle the spec
+  intends.
   `find_jobs` searches real openings via the **official Federal Employment
   Agency (Bundesagentur fuer Arbeit) API** — home, essentials AND a job in
   one shared session; `get_paperwork_checklist` hands the agent the ordered
@@ -77,6 +81,12 @@ not exist without WebMCP.
   `toolparamdescription` per the current declarative-API explainer.
 - Tools and click handlers call the **same functions** — the page is one
   state machine with two front doors (mouse and model).
+- A live **activity feed** on the page shows who did what (🤖 agent /
+  🧑 human), so the collaboration is visible, auditable and demo-able.
+- **Share link**: the whole co-authored plan serializes into a URL — send it
+  to your partner, and their agent continues where yours left off.
+- Three **tap-to-copy example prompts** on the page get first-time visitors
+  (and judges) from zero to a working agent conversation in seconds.
 - Feature-detected (`document.modelContext`, `navigator.modelContext` as
   deprecated fallback) — the page is a normal website in any browser.
 
