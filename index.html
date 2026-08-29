@@ -330,7 +330,7 @@ function setLang(l) {
   document.getElementById("plz").placeholder = t("plzph");
   document.getElementById("lang-en").className = lang === "en" ? "on" : "";
   document.getElementById("lang-de").className = lang === "de" ? "on" : "";
-  renderResults(false); renderShortlist();
+  renderChips(); renderResults(false); renderShortlist();
 }
 
 /* ============ State ============ */
@@ -341,6 +341,7 @@ const state = {
   categories: [],
   selected: new Set(),
   jobs: null,
+  catmap: {},
 };
 let map, markerLayer;
 let nextId = 1;
@@ -370,6 +371,12 @@ async function api(path) {
 }
 
 /* ============ UI ============ */
+function catLabel(slug, fallback) {
+  const c = state.catmap && state.catmap[slug];
+  if (!c) return fallback || slug;
+  return lang === "de" ? c.label : (c.label_en || c.label);
+}
+
 function esc(s) { return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
 function renderChips() {
@@ -378,7 +385,7 @@ function renderChips() {
   for (const c of state.categories) {
     const el = document.createElement("span");
     el.className = "chip" + (state.selected.has(c.slug) ? " on" : "");
-    el.textContent = c.emoji + " " + c.label;
+    el.textContent = c.emoji + " " + (lang === "de" ? c.label : (c.label_en || c.label));
     el.setAttribute("role", "button");
     el.setAttribute("aria-pressed", state.selected.has(c.slug));
     el.onclick = () => { state.selected.has(c.slug) ? state.selected.delete(c.slug) : state.selected.add(c.slug);
@@ -397,7 +404,7 @@ function renderResults(flash) {
     const block = document.createElement("div");
     block.className = "catblock" + (flash ? " flash" : "");
     const recs = cat.records || [];
-    let html = '<div class="cathead">' + esc(cat.emoji + " " + cat.label) + "</div>";
+    let html = '<div class="cathead">' + esc(cat.emoji + " " + catLabel(slug, cat.label)) + "</div>";
     if (!recs.length) { html += '<p class="empty">' + t("noresults") + "</p>"; }
     else {
       html += '<ul class="results">';
@@ -429,7 +436,7 @@ function renderShortlist(flashId) {
     el.innerHTML =
       '<button class="rm" title="✕" onclick="removeItem(' + it.id + ')">✕</button>' +
       "<div><b>" + esc(it.emoji + " " + it.name) + "</b></div>" +
-      '<div class="meta" style="color:var(--muted);font-size:.84rem">' + esc(it.label) +
+      '<div class="meta" style="color:var(--muted);font-size:.84rem">' + esc(catLabel(it.slug, it.label)) +
       (it.city ? " · " + esc(it.city) : "") + (it.distance_km != null ? " · " + it.distance_km + " km" : "") +
       (it.phone ? " · " + esc(it.phone) : "") + "</div>" +
       (it.by === "agent" ? '<div class="who">' + t("byagent") + "</div>" : "") +
@@ -542,7 +549,7 @@ function setNoteUI(id, note) {
 function planMarkdown() {
   const lines = [t("planheader") + (state.plz ? " — PLZ " + state.plz : ""), ""];
   for (const it of state.shortlist) {
-    lines.push("- **" + it.emoji + " " + it.name + "** (" + it.label + ")" +
+    lines.push("- **" + it.emoji + " " + it.name + "** (" + catLabel(it.slug, it.label) + ")" +
       (it.city ? ", " + it.city : "") +
       (it.distance_km != null ? ", " + it.distance_km + " km" : "") +
       (it.phone ? ", Tel. " + it.phone : "") +
@@ -577,7 +584,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     inputSchema: { type: "object", properties: {} },
     annotations: { readOnlyHint: true },
     execute: async () => T({ selected: [...state.selected],
-      categories: state.categories.map(c => ({ slug: c.slug, label: c.label, emoji: c.emoji })) }),
+      categories: state.categories.map(c => ({ slug: c.slug, label_de: c.label, label_en: c.label_en, emoji: c.emoji })) }),
   });
 
   mc.registerTool({
@@ -738,6 +745,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
   setLang(lang);
   const cats = await api("/api/categories");
   state.categories = cats.categories;
+  state.catmap = Object.fromEntries(cats.categories.map(c => [c.slug, c]));
   if (!state.selected.size) state.selected = new Set(cats.essentials);
   renderChips();
   map = L.map("map", { scrollWheelZoom: false }).setView([51.16, 10.45], 6);

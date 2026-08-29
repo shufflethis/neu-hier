@@ -281,7 +281,7 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api/categories":
             self._send({"count": len(NETWORK), "essentials": ESSENTIALS,
-                        "categories": [{k: v[k] for k in ("slug", "label", "plural", "emoji", "domain")}
+                        "categories": [{k: v[k] for k in ("slug", "label", "label_en", "plural", "emoji", "domain")}
                                        for v in NETWORK]})
             return
 
