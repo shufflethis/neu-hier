@@ -10,7 +10,26 @@
 <meta property="og:description" content="Because the paperwork is enough drama. You and your AI agent build your everyday essentials together: supermarket, doctors, dentist & 80 more categories — real nationwide data, sorted by distance.">
 <meta property="og:url" content="https://movetogermany.lol/">
 <meta name="description" content="move to germany, lol — because the paperwork is enough drama. You and your AI agent build your everyday essentials together: supermarket, doctors, dentist & 80 more categories — real data, sorted by distance.">
+<link rel="alternate" type="text/markdown" href="https://movetogermany.lol/index.md">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "move to germany, lol",
+  "url": "https://movetogermany.lol/",
+  "description": "Collaborative arrival planner for Germany: human and AI agent build the everyday essentials for a new address together — 80+ business categories, real nationwide data, sorted by distance.",
+  "applicationCategory": "TravelApplication",
+  "operatingSystem": "Web",
+  "inLanguage": ["en", "de"],
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Agentifizierung",
+    "url": "https://www.agentifizierung.de/"
+  }
+}
+</script>
 <style>
   :root {
     color-scheme: light;
@@ -120,6 +139,12 @@
       </div>
     </aside>
   </div>
+  <section class="card" style="margin-top:18px;">
+    <h2 style="margin-top:0" data-i18n="how">How it works</h2>
+    <p data-i18n="how1">Moving to Germany means rebuilding your entire everyday infrastructure — supermarket, doctor, dentist, hairdresser, bank — in a place you don't know yet. Doing that alone means thirty browser tabs; letting an agent do it alone means decisions about your life made without you.</p>
+    <p data-i18n="how2">This page is built for both of you: your AI agent operates it through WebMCP tools (search 80+ categories in parallel, fill the plan, read your notes back), while you see everything it does live on the page — and curate, veto and annotate with your own hands. The plan belongs to both of you.</p>
+    <p data-i18n="how3">Data comes from the "in meiner Nähe" network: 80+ agent-readable German business directories built from OpenStreetMap and Overture Maps, distance-sorted per postal code. Machine-readable endpoints: /llms.txt, /openapi.json, /index.md, /.well-known/mcp.json.</p>
+  </section>
 </main>
   <footer>
     <span data-i18n="datalayer">Data layer:</span>
@@ -163,7 +188,11 @@ const I18N = {
     project: "A project by",
     planheader: "# My arrival plan (movetogermany.lol)",
     plannote: "Note",
-    planfooter: "_Built with Arrive in Germany on top of the „in meiner Nähe“ network (OpenStreetMap/Overture)._",
+    planfooter: "_Built with movetogermany.lol on top of the „in meiner Nähe“ network (OpenStreetMap/Overture)._",
+    how: "How it works",
+    how1: "Moving to Germany means rebuilding your entire everyday infrastructure — supermarket, doctor, dentist, hairdresser, bank — in a place you don't know yet. Doing that alone means thirty browser tabs; letting an agent do it alone means decisions about your life made without you.",
+    how2: "This page is built for both of you: your AI agent operates it through WebMCP tools (search 80+ categories in parallel, fill the plan, read your notes back), while you see everything it does live on the page — and curate, veto and annotate with your own hands. The plan belongs to both of you.",
+    how3: "Data comes from the \"in meiner Nähe\" network: 80+ agent-readable German business directories built from OpenStreetMap and Overture Maps, distance-sorted per postal code. Machine-readable endpoints: /llms.txt, /openapi.json, /index.md, /.well-known/mcp.json.",
   },
   de: {
     title: "move to germany, lol — dein Ankommens-Planer",
@@ -192,7 +221,11 @@ const I18N = {
     project: "Ein Projekt von",
     planheader: "# Mein Ankommens-Plan",
     plannote: "Notiz",
-    planfooter: "_Erstellt mit neu-hier über das „in meiner Nähe“-Netzwerk (OpenStreetMap/Overture)._",
+    planfooter: "_Erstellt mit movetogermany.lol über das „in meiner Nähe“-Netzwerk (OpenStreetMap/Overture)._",
+    how: "So funktioniert's",
+    how1: "Ein Umzug heißt: die komplette Alltags-Infrastruktur neu aufbauen — Supermarkt, Arzt, Zahnarzt, Friseur, Bank — an einem Ort, den du noch nicht kennst. Allein bedeutet das dreißig Browser-Tabs; es dem Agenten allein zu überlassen heißt, dass über deinen Alltag ohne dich entschieden wird.",
+    how2: "Diese Seite ist für euch beide gebaut: Dein KI-Agent bedient sie über WebMCP-Tools (80+ Branchen parallel durchsuchen, den Plan füllen, deine Notizen zurücklesen), während du alles live auf der Seite siehst — und selbst kuratierst, vetost und kommentierst. Der Plan gehört euch gemeinsam.",
+    how3: "Die Daten kommen aus dem „in meiner Nähe“-Netzwerk: 80+ agentenlesbare Branchenverzeichnisse aus OpenStreetMap und Overture Maps, je PLZ nach Entfernung sortiert. Maschinenlesbar: /llms.txt, /openapi.json, /index.md, /.well-known/mcp.json.",
   },
 };
 let lang = "en";
