@@ -66,14 +66,21 @@ ESSENTIALS = ["hotel", "immobilienmakler", "umzugsunternehmen", "moebelhaus",
               "steuerberater"]
 
 
-def vertical_search(slug, plz, limit=3, timeout=12):
+def vertical_search(slug, plz, limit=3, timeout=12, lat=None, lon=None, booking_only=False):
     """Fragt die Such-API einer Vertikale ab (lokal oder öffentlich)."""
     v = BY_SLUG.get(slug)
     if not v:
         return {"slug": slug, "error": "unknown category"}
     base = (f"http://127.0.0.1:{v['port']}" if USE_LOCAL
             else f"https://{v['domain']}")
-    url = f"{base}/api/search?plz={urllib.parse.quote(plz)}&limit={int(limit)}"
+    params = {"limit": str(int(limit))}
+    if lat is not None and lon is not None:
+        params["lat"], params["lon"] = str(lat), str(lon)
+    else:
+        params["plz"] = plz
+    if booking_only:
+        params["booking"] = "only"
+    url = f"{base}/api/search?" + urllib.parse.urlencode(params)
     try:
         req = urllib.request.Request(url, headers={
             "User-Agent": "neu-hier-aggregator/1.0 (+https://github.com/shufflethis/neu-hier)"})
@@ -199,12 +206,71 @@ planner exposes typed tools — see /llms.txt.*
 """
 
 
-def guide_html():
-    """Der Guide als gestylte HTML-Seite (Markdown-Zwilling: GUIDE_MD)."""
+DEV_MD = """# One keyless API for 1.16M German local businesses
+
+Stripe unified payments. Plaid unified banks. This unifies **German local
+business data for AI agents**: 81 category directories, one endpoint, one
+schema, **no API key**, no signup — plus official job data and a unified
+booking lookup.
+
+## Why this exists
+
+Agent developers need local grounding data. Google Places is excellent but
+costs money, needs a key, and its terms restrict caching and derivatives.
+This API is OpenStreetMap/Overture-based: free, keyless, cache-friendly
+(ODbL / CDLA-Permissive), built agent-first.
+
+## MCP (recommended for agents)
+
+Connect any MCP client to the streamable-HTTP endpoint:
+
+    https://movetogermany.lol/mcp
+
+Six tools: search_local, list_categories, search_essentials, find_bookable,
+find_jobs (official Bundesagentur fuer Arbeit data), get_paperwork_checklist.
+Server card: /.well-known/mcp.json
+
+## REST
+
+- GET /api/categories — all 81 categories (German + English labels)
+- GET /api/search?cat=friseur&plz=10115&limit=5 — one category, distance-sorted
+- GET /api/essentials?plz=10115&cats=supermarkt,zahnarzt — many categories in parallel
+- GET /api/booking?plz=10115&category=friseur — unified booking lookup (deep links)
+- GET /api/jobs?plz=10115&what=developer — official job openings
+- GET /api/paperwork — the German bureaucracy starter pack
+
+Full contract: /openapi.json — errors and rate limits are stated in /auth.md.
+
+## The data
+
+1.16M businesses across 81 categories, nationwide Germany, distance-sorted
+per postal code or coordinates. Sources: OpenStreetMap (ODbL 1.0) and
+Overture Maps (CDLA-Permissive-2.0). Each category also runs as its own
+agent-readable directory with per-domain MCP — this endpoint is the unified
+interface over all of them.
+
+## Booking (honest status)
+
+find_bookable returns online-bookable providers normalized across platforms
+(google_booking, calendly, own booking forms) with one deep link each.
+Today: lookup + deep link — the booking completes on the provider's
+platform. Availability/slot APIs are the roadmap, not the promise.
+
+## Terms
+
+Free, keyless, read-only. Rate-limit headers on every response. Please send
+a meaningful User-Agent. Data licenses: ODbL 1.0 / CDLA-Permissive-2.0 —
+attribution required. Built by [Agentifizierung](https://www.agentifizierung.de/);
+source: https://github.com/shufflethis/neu-hier
+"""
+
+
+def md_page_html(md, title, desc, path):
+    """Eine Markdown-Quelle als gestylte HTML-Seite (Zwilling: /<path>.md)."""
     import html as _h
     import re as _re
     body = []
-    for block in GUIDE_MD.split("\n\n"):
+    for block in md.split("\n\n"):
         b = block.strip()
         if not b:
             continue
@@ -233,10 +299,10 @@ def guide_html():
                 body.append(f"<p>{md_inline(' '.join(lines))}</p>")
     return ('<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
             '<meta name="viewport" content="width=device-width, initial-scale=1">'
-            '<title>Moving to Germany: the complete arrival checklist</title>'
-            '<meta name="description" content="Week-by-week relocation checklist for Germany: Anmeldung, tax ID, health insurance, bank account, Kindergeld — official links only.">'
-            f'<link rel="canonical" href="https://{DOMAIN}/guide">'
-            '<link rel="alternate" type="text/markdown" href="/guide.md">'
+            f'<title>{_h.escape(title)}</title>'
+            f'<meta name="description" content="{_h.escape(desc)}">'
+            f'<link rel="canonical" href="https://{DOMAIN}/{path}">'
+            f'<link rel="alternate" type="text/markdown" href="/{path}.md">'
             '<link rel="icon" href="/favicon.svg" type="image/svg+xml">'
             '<style>body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;'
             'background:#f6f7f9;color:#1a1d21;line-height:1.65}'
@@ -282,6 +348,168 @@ def index_markdown():
     )
 
 
+def ba_jobs(plz, what="", limit=5, radius=25):
+    """Offizielle Jobsuche-API der Bundesagentur fuer Arbeit
+    (bund.dev / bundesAPI, oeffentlicher Key "jobboerse-jobsuche")."""
+    params = {"wo": plz, "umkreis": str(radius), "size": str(limit)}
+    if what:
+        params["was"] = what
+    url = ("https://rest.arbeitsagentur.de/jobboerse/jobsuche-service"
+           "/pc/v6/jobs?" + urllib.parse.urlencode(params))
+    try:
+        req = urllib.request.Request(url, headers={
+            "X-API-Key": "jobboerse-jobsuche",
+            "User-Agent": "movetogermany.lol/1.0"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            data = json.load(r)
+    except Exception as exc:
+        return ({"error": "Bundesagentur-API nicht erreichbar: " + str(exc)[:120]}, 502)
+    jobs = []
+    for s in data.get("ergebnisliste", [])[:limit]:
+        lok = (s.get("stellenlokationen") or [{}])[0]
+        adr = lok.get("adresse") or {}
+        salary = None
+        if s.get("gehaltsspanneVon"):
+            salary = (f"{int(s['gehaltsspanneVon']):,} – "
+                      f"{int(s.get('gehaltsspanneBis') or s['gehaltsspanneVon']):,} EUR/Jahr")
+        jobs.append({
+            "title": s.get("stellenangebotsTitel"),
+            "employer": s.get("firma"),
+            "city": adr.get("ort"), "plz": adr.get("plz"),
+            "lat": lok.get("breite"), "lon": lok.get("laenge"),
+            "salary": salary,
+            "homeoffice": s.get("homeofficemoeglich"),
+            "career_changer_ok": s.get("quereinstiegGeeignet"),
+            "url": ("https://www.arbeitsagentur.de/jobsuche/jobdetail/"
+                    + urllib.parse.quote(s.get("referenznummer") or "")),
+        })
+    return ({"plz": plz, "what": what or None,
+             "total": data.get("maxErgebnisse"), "jobs": jobs,
+             "source": "Bundesagentur für Arbeit (official Jobsuche API)"}, 200)
+
+
+# Dienstleistungs-Branchen mit nennenswerter Online-Buchbarkeit im Netzwerk
+BOOKING_CATS = ["friseur", "massage", "kosmetikstudio", "nagelstudio",
+                "physiotherapie", "tierklinik", "heilpraktiker", "tattoo",
+                "yoga-studio", "pilates", "fahrschule", "nachhilfe"]
+
+
+def booking_search(plz, category=None, limit=5):
+    """Unified-Booking-Lookup: buchbare Anbieter (booking=only) ueber eine
+    oder alle Service-Branchen, normalisiertes Schema mit Deep-Link.
+    Ehrlich: Lookup + Deep-Link — Verfuegbarkeits-/Slot-APIs sind Roadmap."""
+    cats = [category] if category else BOOKING_CATS
+    cats = [c for c in cats if c in BY_SLUG]
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        results = list(ex.map(
+            lambda s: vertical_search(s, plz, limit, booking_only=True), cats))
+    providers = []
+    for cat in results:
+        for r in cat.get("records", []):
+            providers.append({
+                "name": r.get("name"),
+                "category": cat["slug"],
+                "category_label": cat.get("label"),
+                "city": r.get("city"),
+                "distance_km": r.get("distance_km"),
+                "phone": r.get("phone"),
+                "email": r.get("email"),
+                "website": r.get("website"),
+                "booking": {
+                    "provider": r.get("booking_platform"),
+                    "url": r.get("booking_url") or r.get("website"),
+                    "kind": "deeplink",
+                },
+            })
+    providers.sort(key=lambda p: (p["distance_km"] is None, p["distance_km"]))
+    return {"plz": plz, "category": category,
+            "count": len(providers), "providers": providers,
+            "note": ("Unified booking lookup across the network's bookable providers. "
+                     "kind=deeplink: booking completes on the provider's own page/platform. "
+                     "Availability/slot APIs are on the roadmap.")}
+
+
+MCP_TOOLS = [
+    {"name": "search_local",
+     "description": ("Find the closest providers of ONE category of German local businesses "
+                     "around a postal code (plz) or coordinates (lat/lon), distance-sorted. "
+                     "1.16M businesses, 81 categories, OpenStreetMap/Overture data, no key. "
+                     "Use list_categories first for valid category slugs."),
+     "inputSchema": {"type": "object", "properties": {
+         "category": {"type": "string", "description": "Category slug, e.g. friseur (hairdresser), zahnarzt (dentist)"},
+         "plz": {"type": "string", "pattern": "^[0-9]{5}$", "description": "German postal code"},
+         "lat": {"type": "number"}, "lon": {"type": "number"},
+         "limit": {"type": "integer", "minimum": 1, "maximum": 20}},
+      "required": ["category"]}},
+    {"name": "list_categories",
+     "description": "All 81 categories of the network with German and English labels. Read-only.",
+     "inputSchema": {"type": "object", "properties": {}}},
+    {"name": "search_essentials",
+     "description": ("Search MANY categories in parallel around a postal code — one call builds a "
+                     "relocation starter set (supermarket, doctors, dentist, bank …). Returns the "
+                     "closest providers per category."),
+     "inputSchema": {"type": "object", "properties": {
+         "plz": {"type": "string", "pattern": "^[0-9]{5}$"},
+         "categories": {"type": "array", "items": {"type": "string"},
+                        "description": "Category slugs; omit for the default 15 essentials"},
+         "limit": {"type": "integer", "minimum": 1, "maximum": 5}},
+      "required": ["plz"]}},
+    {"name": "find_bookable",
+     "description": ("Unified booking lookup: online-bookable service providers (hairdresser, massage, "
+                     "physio …) around a postal code, normalized across booking platforms "
+                     "(google_booking, calendly, own forms) with a deep link each. Booking completes "
+                     "on the provider's platform — availability APIs are roadmap."),
+     "inputSchema": {"type": "object", "properties": {
+         "plz": {"type": "string", "pattern": "^[0-9]{5}$"},
+         "category": {"type": "string", "description": "Optional single category slug"},
+         "limit": {"type": "integer", "minimum": 1, "maximum": 10}},
+      "required": ["plz"]}},
+    {"name": "find_jobs",
+     "description": ("Real job openings around a postal code via the OFFICIAL German Federal "
+                     "Employment Agency (Bundesagentur fuer Arbeit) API — title, employer, salary "
+                     "range, official application link."),
+     "inputSchema": {"type": "object", "properties": {
+         "plz": {"type": "string", "pattern": "^[0-9]{5}$"},
+         "what": {"type": "string", "description": "Free-text role query"},
+         "limit": {"type": "integer", "minimum": 1, "maximum": 20},
+         "radius": {"type": "integer", "minimum": 5, "maximum": 200}},
+      "required": ["plz"]}},
+    {"name": "get_paperwork_checklist",
+     "description": "The ordered official German bureaucracy steps after moving (Anmeldung, tax ID, health insurance, Kindergeld …) with government links only. Read-only, static.",
+     "inputSchema": {"type": "object", "properties": {}}},
+]
+
+
+def mcp_call(name, args):
+    """Dispatch eines MCP-tools/call auf die vorhandenen Funktionen."""
+    args = args or {}
+    if name == "search_local":
+        return vertical_search(args.get("category", ""), args.get("plz", ""),
+                               min(int(args.get("limit", 5)), 20),
+                               lat=args.get("lat"), lon=args.get("lon"))
+    if name == "list_categories":
+        return {"count": len(NETWORK), "essentials": ESSENTIALS,
+                "categories": [{k: v[k] for k in ("slug", "label", "label_en", "emoji", "domain")}
+                               for v in NETWORK]}
+    if name == "search_essentials":
+        cats = [c for c in (args.get("categories") or ESSENTIALS) if c in BY_SLUG][:20]
+        limit = min(int(args.get("limit", 3)), 5)
+        with ThreadPoolExecutor(max_workers=10) as ex:
+            results = list(ex.map(lambda s: vertical_search(s, args.get("plz", ""), limit), cats))
+        return {"plz": args.get("plz"), "categories": results}
+    if name == "find_bookable":
+        return booking_search(args.get("plz", ""), args.get("category"),
+                              min(int(args.get("limit", 5)), 10))
+    if name == "find_jobs":
+        data, _status = ba_jobs(args.get("plz", ""), args.get("what", ""),
+                                min(int(args.get("limit", 5)), 20),
+                                min(int(args.get("radius", 25)), 200))
+        return data
+    if name == "get_paperwork_checklist":
+        return PAPERWORK
+    return {"error": f"unknown tool: {name}"}
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "neu-hier/1.0"
 
@@ -307,6 +535,79 @@ class Handler(BaseHTTPRequestHandler):
     def do_HEAD(self):
         self.do_GET()
 
+    def _send_mcp(self, body):
+        """MCP-JSON-RPC-Antwort; bei Accept: text/event-stream als SSE-Event
+        (Streamable-HTTP-Standard), sonst als einfaches JSON."""
+        accept = self.headers.get("Accept") or ""
+        if "text/event-stream" in accept:
+            payload = f"event: message\ndata: {body}\n\n".encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("mcp-protocol-version", "2025-03-26")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+        else:
+            data = body.encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("mcp-protocol-version", "2025-03-26")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers",
+                         "content-type, mcp-session-id, mcp-protocol-version")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def do_POST(self):
+        """Backend-MCP (Streamable HTTP, JSON-RPC): initialize / tools/list / tools/call."""
+        parsed = urllib.parse.urlparse(self.path)
+        if parsed.path != "/mcp":
+            self._send({"error": "not found"}, status=404)
+            return
+        try:
+            n = int(self.headers.get("content-length") or 0)
+            req = json.loads(self.rfile.read(n).decode("utf-8")) if n else {}
+        except Exception:
+            req = {}
+        method = req.get("method")
+        rid = req.get("id")
+        if method == "initialize":
+            self._send_mcp(json.dumps({"jsonrpc": "2.0", "id": rid, "result": {
+                "protocolVersion": "2025-03-26",
+                "capabilities": {"tools": {"listChanged": False}},
+                "serverInfo": {"name": "movetogermany-local-api", "version": "1.0.0"},
+                "instructions": ("One keyless API for 1.16M German local businesses (81 categories), "
+                                 "official job data and a unified booking lookup. Start with "
+                                 "list_categories or search_essentials."),
+            }}, ensure_ascii=False))
+            return
+        if method == "tools/list":
+            self._send_mcp(json.dumps({"jsonrpc": "2.0", "id": rid,
+                                       "result": {"tools": MCP_TOOLS}}, ensure_ascii=False))
+            return
+        if method == "tools/call":
+            params = req.get("params") or {}
+            result = mcp_call(params.get("name", ""), params.get("arguments"))
+            self._send_mcp(json.dumps({"jsonrpc": "2.0", "id": rid, "result": {
+                "content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False)}],
+                "isError": bool(isinstance(result, dict) and result.get("error")),
+            }}, ensure_ascii=False))
+            return
+        # notifications/initialized u.ä.
+        self.send_response(202)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
@@ -323,7 +624,22 @@ class Handler(BaseHTTPRequestHandler):
             if wants_markdown(self.headers.get("Accept", "")):
                 self._send(GUIDE_MD, "text/markdown; charset=utf-8")
             else:
-                self._send(guide_html(), "text/html; charset=utf-8")
+                self._send(md_page_html(GUIDE_MD, "Moving to Germany: the complete arrival checklist",
+                    "Week-by-week relocation checklist for Germany: Anmeldung, tax ID, health insurance, bank account, Kindergeld — official links only.",
+                    "guide"), "text/html; charset=utf-8")
+            return
+
+        if path == "/developers":
+            if wants_markdown(self.headers.get("Accept", "")):
+                self._send(DEV_MD, "text/markdown; charset=utf-8")
+            else:
+                self._send(md_page_html(DEV_MD, "One keyless API for 1.16M German local businesses",
+                    "Unified MCP + REST interface over 81 German local-business directories: search, essentials, booking lookup, official job data. No API key.",
+                    "developers"), "text/html; charset=utf-8")
+            return
+
+        if path == "/developers.md":
+            self._send(DEV_MD, "text/markdown; charset=utf-8")
             return
 
         if path == "/guide.md":
@@ -352,7 +668,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/sitemap.xml":
             import datetime as _dt
             today = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d")
-            urls = ["/", "/guide", "/llms.txt", "/index.md", "/auth.md", "/openapi.json"]
+            urls = ["/", "/guide", "/developers", "/llms.txt", "/index.md", "/auth.md", "/openapi.json"]
             body = ('<?xml version="1.0" encoding="UTF-8"?>\n'
                     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n')
             for u in urls:
@@ -365,11 +681,12 @@ class Handler(BaseHTTPRequestHandler):
             self._send({
                 "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
                 "name": "lol.movetogermany/arrival-planner",
-                "description": "Collaborative arrival planner for Germany: WebMCP in-page tools plus an "
-                               "HTTP aggregation API over 80+ distance-sorted German business directories. "
-                               "Read-only, no authentication.",
+                "description": "One keyless API for 1.16M German local businesses: MCP + REST over 81 "
+                               "distance-sorted directories, unified booking lookup, official job data. "
+                               "Read-only, no authentication. WebMCP in-page tools on the website itself.",
                 "version": "1.0.0",
-                "websiteUrl": f"https://{DOMAIN}/",
+                "websiteUrl": f"https://{DOMAIN}/developers",
+                "remotes": [{"type": "streamable-http", "url": f"https://{DOMAIN}/mcp"}],
             }, "application/json; charset=utf-8")
             return
 
@@ -411,6 +728,14 @@ class Handler(BaseHTTPRequestHandler):
                         "responses": {"200": {"description": "Job openings with salary ranges and official detail links"},
                                       "400": {"description": "Missing parameters"},
                                       "502": {"description": "Upstream API unavailable"}}}},
+                    "/api/booking": {"get": {"operationId": "searchBookable",
+                        "summary": "Unified booking lookup: online-bookable providers across categories/platforms",
+                        "parameters": [
+                            {"name": "plz", "in": "query", "required": True, "schema": {"type": "string", "pattern": "^[0-9]{5}$"}},
+                            {"name": "category", "in": "query", "schema": {"type": "string"}},
+                            {"name": "limit", "in": "query", "schema": {"type": "integer", "maximum": 10}}],
+                        "responses": {"200": {"description": "Bookable providers with normalized platform + deep link"},
+                                      "400": {"description": "Missing parameters"}}}},
                     "/api/paperwork": {"get": {"operationId": "getPaperwork",
                         "summary": "German paperwork starter pack with official links",
                         "responses": {"200": {"description": "Ordered checklist"}}}},
@@ -485,45 +810,18 @@ class Handler(BaseHTTPRequestHandler):
             if not plz:
                 self._send({"error": "plz ist Pflicht"}, status=400)
                 return
-            # Offizielle Jobsuche-API der Bundesagentur fuer Arbeit
-            # (bund.dev / bundesAPI, oeffentlicher Key "jobboerse-jobsuche")
-            params = {"wo": plz, "umkreis": str(radius), "size": str(limit)}
-            if what:
-                params["was"] = what
-            url = ("https://rest.arbeitsagentur.de/jobboerse/jobsuche-service"
-                   "/pc/v6/jobs?" + urllib.parse.urlencode(params))
-            try:
-                req = urllib.request.Request(url, headers={
-                    "X-API-Key": "jobboerse-jobsuche",
-                    "User-Agent": "movetogermany.lol/1.0"})
-                with urllib.request.urlopen(req, timeout=15) as r:
-                    data = json.load(r)
-            except Exception as exc:
-                self._send({"error": "Bundesagentur-API nicht erreichbar: " + str(exc)[:120]},
-                           status=502)
+            data, status = ba_jobs(plz, what, limit, radius)
+            self._send(data, status=status)
+            return
+
+        if path == "/api/booking":
+            plz = (q.get("plz") or [""])[0]
+            cat = (q.get("category") or [""])[0]
+            limit = min(int((q.get("limit") or ["5"])[0]), 10)
+            if not plz:
+                self._send({"error": "plz ist Pflicht"}, status=400)
                 return
-            jobs = []
-            for s in data.get("ergebnisliste", [])[:limit]:
-                lok = (s.get("stellenlokationen") or [{}])[0]
-                adr = lok.get("adresse") or {}
-                salary = None
-                if s.get("gehaltsspanneVon"):
-                    salary = (f"{int(s['gehaltsspanneVon']):,} – "
-                              f"{int(s.get('gehaltsspanneBis') or s['gehaltsspanneVon']):,} EUR/Jahr")
-                jobs.append({
-                    "title": s.get("stellenangebotsTitel"),
-                    "employer": s.get("firma"),
-                    "city": adr.get("ort"), "plz": adr.get("plz"),
-                    "lat": lok.get("breite"), "lon": lok.get("laenge"),
-                    "salary": salary,
-                    "homeoffice": s.get("homeofficemoeglich"),
-                    "career_changer_ok": s.get("quereinstiegGeeignet"),
-                    "url": ("https://www.arbeitsagentur.de/jobsuche/jobdetail/"
-                            + urllib.parse.quote(s.get("referenznummer") or "")),
-                })
-            self._send({"plz": plz, "what": what or None,
-                        "total": data.get("maxErgebnisse"), "jobs": jobs,
-                        "source": "Bundesagentur für Arbeit (official Jobsuche API)"})
+            self._send(booking_search(plz, cat or None, limit))
             return
 
         if path == "/api/paperwork":
@@ -540,6 +838,7 @@ class Handler(BaseHTTPRequestHandler):
                 "## Core pages\n"
                 f"- [App](https://{DOMAIN}/): the collaborative planner (WebMCP tools register on load)\n"
                 f"- [Arrival guide](https://{DOMAIN}/guide): week-by-week relocation checklist for Germany, official links only\n"
+                f"- [Developer API](https://{DOMAIN}/developers): one keyless MCP+REST API for 1.16M German local businesses\n"
                 f"- [Markdown version](https://{DOMAIN}/index.md): this page as plain Markdown\n"
                 f"- [OpenAPI schema](https://{DOMAIN}/openapi.json): full HTTP API contract\n"
                 f"- [Auth notes](https://{DOMAIN}/auth.md): keyless, read-only, rate-limit headers\n\n"
@@ -548,7 +847,9 @@ class Handler(BaseHTTPRequestHandler):
                 f"- [Search one category](https://{DOMAIN}/api/search?cat=supermarkt&plz=10115&limit=5): distance-sorted providers\n"
                 f"- [Essentials in parallel](https://{DOMAIN}/api/essentials?plz=10115): many categories at once\n"
                 f"- [Job search](https://{DOMAIN}/api/jobs?plz=10115&what=developer): official Bundesagentur fuer Arbeit openings\n"
-                f"- [Paperwork starter pack](https://{DOMAIN}/api/paperwork): ordered official bureaucracy steps\n\n"
+                f"- [Paperwork starter pack](https://{DOMAIN}/api/paperwork): ordered official bureaucracy steps\n"
+                f"- [Unified booking lookup](https://{DOMAIN}/api/booking?plz=10115): bookable providers across platforms, deep links\n"
+                f"- [Backend MCP](https://{DOMAIN}/mcp): streamable-HTTP MCP server, 6 tools, see /.well-known/mcp.json\n\n"
                 "## WebMCP tools on the page\n"
                 "list_categories, set_home_plz, find_nearby, generate_starter_plan, add_to_shortlist, "
                 "remove_from_shortlist, get_shortlist, set_note, find_jobs, get_paperwork_checklist, "

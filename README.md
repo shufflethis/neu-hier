@@ -44,7 +44,7 @@ This page is a **shared workspace** for both:
 
 ## WebMCP implementation
 
-**13 imperative tools** via `document.modelContext.registerTool` — typed
+**14 imperative tools** via `document.modelContext.registerTool` — typed
 JSON schemas, per-property descriptions, explicit `required` lists,
 `readOnlyHint` on read paths, `untrustedContentHint` where tools return
 human-written notes:
@@ -60,6 +60,7 @@ human-written notes:
 | `set_note` | annotate entries |
 | `draft_outreach` | ready-to-send first-contact message per entry, uses the human's note |
 | `find_jobs` | official Bundesagentur für Arbeit data |
+| `find_bookable` | unified booking lookup across platforms (deep links) |
 | `get_paperwork_checklist` | official links only |
 | `export_plan` | **conditional** — registered only while the plan has entries |
 | `compare_candidates` | **conditional** — registered only while a category has 2+ results |
@@ -72,6 +73,26 @@ carries the **declarative API** annotations (`toolname`, `tooldescription`,
 
 Tools and click handlers call the **same functions**: the page is one state
 machine with two front doors (mouse and model).
+
+## The unified API (the Stripe lesson, applied)
+
+Stripe unified payments; Plaid unified banks. This project unifies **German
+local business data for agents**: instead of 81 separate directory
+endpoints, one keyless interface —
+
+- **Backend MCP** (streamable HTTP): `https://movetogermany.lol/mcp` — six
+  tools (`search_local`, `list_categories`, `search_essentials`,
+  `find_bookable`, `find_jobs`, `get_paperwork_checklist`), server card at
+  `/.well-known/mcp.json`.
+- **REST**: `/api/*`, contract in `/openapi.json`, docs at
+  [`/developers`](https://movetogermany.lol/developers).
+- **Unified booking lookup**: `find_bookable` normalizes online-bookable
+  providers across platforms (google_booking, Calendly, own forms) with one
+  deep link each. Honest status: lookup + deep link today; availability
+  APIs are roadmap.
+
+The web app is the reference client of its own API — and agents get three
+doors: WebMCP in-page, backend MCP, plain REST.
 
 ## Data layer
 

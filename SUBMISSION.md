@@ -60,7 +60,7 @@ not exist without WebMCP.
 
 ## How we implemented WebMCP
 
-- **13 imperative tools** via `document.modelContext.registerTool`:
+- **14 imperative tools** via `document.modelContext.registerTool`:
   `list_categories`, `set_home_plz`, `find_nearby`, `generate_starter_plan`,
   `add_to_shortlist`, `remove_from_shortlist`, `get_shortlist`, `set_note`,
   `draft_outreach`, `find_jobs`, `get_paperwork_checklist`, plus two
@@ -90,6 +90,13 @@ not exist without WebMCP.
   (and judges) from zero to a working agent conversation in seconds.
 - Feature-detected (`document.modelContext`, `navigator.modelContext` as
   deprecated fallback) — the page is a normal website in any browser.
+
+## Three doors for agents, one state machine
+
+WebMCP in-page tools for the visitor's own agent, a **backend MCP server**
+(`https://movetogermany.lol/mcp`, streamable HTTP, six tools incl. a
+unified booking lookup across platforms) for agent platforms, and plain
+REST (`/developers`) — all calling the same functions over the same data.
 
 ## The data layer (our unfair advantage)
 

@@ -251,7 +251,8 @@
     <a href="https://friseur-in-meiner-naehe.de/llms.txt">"in meiner Nähe" network</a> —
     <span data-i18n="datalayer2">80+ agent-readable German business directories (OpenStreetMap ODbL · Overture Maps CDLA)</span> ·
     <a href="/llms.txt">llms.txt</a> ·
-    <a href="https://github.com/shufflethis/neu-hier">Open Source (MIT)</a><br>
+    <a href="https://github.com/shufflethis/neu-hier">Open Source (MIT)</a> ·
+    <a href="/developers" data-i18n="devlink">API for developers</a><br>
     🤖 <span data-i18n="project">A project by</span> <a href="https://agentifizierung.de" rel="noopener" target="_blank">Agentifizierung</a><br>
     <a href="https://webmcp-tool.com/b/movetogermany.lol" target="_blank" rel="noopener" style="display:inline-block;margin-top:10px;">
       <img src="https://webmcp-tool.com/badge/movetogermany.lol.svg"
@@ -305,6 +306,9 @@ const I18N = {
     why7: "Cash only, sorry — the fax machine is still warming up.",
     why8: "Lost two world wars, working overtime to help avoid the third. You're welcome here.",
     book: "Book online",
+    bookhead: "Bookable right now",
+    actbook: "Found {x} bookable providers",
+    devlink: "API for developers",
     acall: "Call",
     aroute: "Route",
     amsg: "Message",
@@ -377,6 +381,9 @@ const I18N = {
     why7: "Nur Bargeld, sorry — das Faxgerät wärmt noch auf.",
     why8: "Zwei Weltkriege verloren, seitdem Überstunden gegen den dritten. Du bist willkommen.",
     book: "Online buchen",
+    bookhead: "Direkt online buchbar",
+    actbook: "{x} buchbare Anbieter gefunden",
+    devlink: "API für Entwickler",
     acall: "Anrufen",
     aroute: "Route",
     amsg: "Nachricht",
@@ -609,6 +616,23 @@ function renderJobs(data) {
       t("jobsapply") + "</a></li>";
   }
   box.innerHTML = html + "</ul>" + '<p class="hint">' + esc(data.source || "") + "</p>";
+}
+
+function renderBookable(data) {
+  const box = document.getElementById("jobs");
+  const ps = (data && data.providers) || [];
+  if (!ps.length) { box.hidden = true; return; }
+  box.hidden = false;
+  let html = '<div class="cathead">📅 ' + t("bookhead") + ' <span style="color:var(--muted);font-weight:400">(' + ps.length + ')</span></div><ul class="results">';
+  for (const p of ps) {
+    html += '<li class="result"><div><div>' + esc(p.name) + '</div>' +
+      '<div class="meta">' + esc(catLabel(p.category, p.category_label)) + (p.city ? " · " + esc(p.city) : "") +
+      (p.distance_km != null ? " · " + p.distance_km + " km" : "") +
+      (p.booking.provider ? " · " + esc(p.booking.provider) : "") + "</div></div>" +
+      (p.booking.url ? '<a class="add" style="text-decoration:none" href="' + esc(p.booking.url) +
+        '" target="_blank" rel="noopener">📅 ' + t("book") + "</a>" : "") + "</li>";
+  }
+  box.innerHTML = html + "</ul>" + '<p class="hint">' + esc(data.note || "") + "</p>";
 }
 
 function renderMap() {
@@ -903,6 +927,28 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
       A(t("actmsg").replace("{x}", it.name));
       return T({ to: { name: it.name, email: it.email || null, phone: it.phone || null },
         draft: outreachDraft(it, language || "en") });
+    },
+  });
+
+  mc.registerTool({
+    name: "find_bookable",
+    description: "Unified booking lookup: online-bookable service providers (hairdresser, massage, physio, " +
+      "vet, driving school …) around the configured PLZ, normalized across booking platforms with one deep " +
+      "link each — booking completes on the provider's platform. Renders results for the user. " +
+      "Optionally restrict to one category slug. Requires set_home_plz. Read-only.",
+    inputSchema: { type: "object", properties: {
+      category: { type: "string", description: "Optional category slug (e.g. friseur, massage)" },
+      limit: { type: "integer", minimum: 1, maximum: 10, description: "Max per category (default 5)" },
+    } },
+    annotations: { readOnlyHint: true },
+    execute: async ({ category, limit }) => {
+      if (!state.plz) return T("Error: call set_home_plz first.");
+      const p = new URLSearchParams({ plz: state.plz, limit: limit || 5 });
+      if (category) p.set("category", category);
+      const data = await api("/api/booking?" + p);
+      renderBookable(data);
+      A(t("actbook").replace("{x}", data.count));
+      return T(data);
     },
   });
 
