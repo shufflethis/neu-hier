@@ -429,8 +429,14 @@ def booking_search(plz, category=None, limit=5):
                      "Availability/slot APIs are on the roadmap.")}
 
 
+MCP_ICONS = [
+    {"src": "https://movetogermany.lol/icon-192.png", "sizes": "192x192", "mimeType": "image/png"},
+    {"src": "https://movetogermany.lol/icon-512.png", "sizes": "512x512", "mimeType": "image/png"},
+]
+
 MCP_TOOLS = [
     {"name": "search_local",
+     "icons": MCP_ICONS,
      "description": ("Find the closest providers of ONE category of German local businesses "
                      "around a postal code (plz) or coordinates (lat/lon), distance-sorted. "
                      "1.16M businesses, 81 categories, OpenStreetMap/Overture data, no key. "
@@ -442,9 +448,11 @@ MCP_TOOLS = [
          "limit": {"type": "integer", "minimum": 1, "maximum": 20}},
       "required": ["category"]}},
     {"name": "list_categories",
+     "icons": MCP_ICONS,
      "description": "All 81 categories of the network with German and English labels. Read-only.",
      "inputSchema": {"type": "object", "properties": {}}},
     {"name": "search_essentials",
+     "icons": MCP_ICONS,
      "description": ("Search MANY categories in parallel around a postal code — one call builds a "
                      "relocation starter set (supermarket, doctors, dentist, bank …). Returns the "
                      "closest providers per category."),
@@ -455,6 +463,7 @@ MCP_TOOLS = [
          "limit": {"type": "integer", "minimum": 1, "maximum": 5}},
       "required": ["plz"]}},
     {"name": "find_bookable",
+     "icons": MCP_ICONS,
      "description": ("Unified booking lookup: online-bookable service providers (hairdresser, massage, "
                      "physio …) around a postal code, normalized across booking platforms "
                      "(google_booking, calendly, own forms) with a deep link each. Booking completes "
@@ -465,6 +474,7 @@ MCP_TOOLS = [
          "limit": {"type": "integer", "minimum": 1, "maximum": 10}},
       "required": ["plz"]}},
     {"name": "find_jobs",
+     "icons": MCP_ICONS,
      "description": ("Real job openings around a postal code via the OFFICIAL German Federal "
                      "Employment Agency (Bundesagentur fuer Arbeit) API — title, employer, salary "
                      "range, official application link."),
@@ -475,6 +485,7 @@ MCP_TOOLS = [
          "radius": {"type": "integer", "minimum": 5, "maximum": 200}},
       "required": ["plz"]}},
     {"name": "get_paperwork_checklist",
+     "icons": MCP_ICONS,
      "description": "The ordered official German bureaucracy steps after moving (Anmeldung, tax ID, health insurance, Kindergeld …) with government links only. Read-only, static.",
      "inputSchema": {"type": "object", "properties": {}}},
 ]
@@ -585,7 +596,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send_mcp(json.dumps({"jsonrpc": "2.0", "id": rid, "result": {
                 "protocolVersion": "2025-03-26",
                 "capabilities": {"tools": {"listChanged": False}},
-                "serverInfo": {"name": "movetogermany-local-api", "version": "1.0.0"},
+                "serverInfo": {"name": "movetogermany-local-api", "version": "1.0.0", "icons": MCP_ICONS},
                 "instructions": ("One keyless API for 1.16M German local businesses (81 categories), "
                                  "official job data and a unified booking lookup. Start with "
                                  "list_categories or search_essentials."),

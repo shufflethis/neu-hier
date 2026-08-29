@@ -60,7 +60,7 @@ not exist without WebMCP.
 
 ## How we implemented WebMCP
 
-- **16 imperative tools** via `document.modelContext.registerTool`:
+- **17 imperative tools** via `document.modelContext.registerTool`:
   `list_categories`, `set_home_plz`, `find_nearby`, `generate_starter_plan`,
   `add_to_shortlist`, `remove_from_shortlist`, `get_shortlist`, `set_note`,
   `draft_outreach`, `find_jobs`, `get_paperwork_checklist`, plus two
@@ -84,6 +84,14 @@ not exist without WebMCP.
   state machine with two front doors (mouse and model).
 - A live **activity feed** on the page shows who did what (🤖 agent /
   🧑 human), so the collaboration is visible, auditable and demo-able.
+- **Appointments with a human in the loop**: `propose_appointment` lets the
+  agent lay concrete slots onto a plan entry; the human confirms one with a
+  single click, which opens a pre-written provider email and saves a
+  tentative .ics. The write path always pauses for a person — the WebMCP
+  security model, implemented as UX.
+- We also **contribute back**: tool icons don't exist in the spec, so the
+  repo contains an issue-ready proposal (mirroring MCP's `Icon` type) and
+  every tool already ships the proposed `icons` member.
 - A shared **arrival persona** (`get_profile`/`set_profile`) — and this is
   WebMCP's quiet superpower made visible: **the visitor's agent already
   knows its user**. It fills household, pet, language needs, mobility and

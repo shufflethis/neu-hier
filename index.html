@@ -99,6 +99,13 @@
   .short-item.by-agent { border-left-color: var(--agent); }
   .short-item .who { font-size: .72rem; color: var(--agent); }
   .short-item .rm { float: right; background: none; border: none; color: var(--muted); cursor: pointer; padding: 0 4px; font-size: 1rem; }
+  .appt { margin-top: 8px; background: #f3eefe; border: 1px solid #e4d9fb; border-radius: 8px; padding: 8px 10px; font-size: .82rem; }
+  .appt .slots { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .appt .slot { padding: 5px 10px; border-radius: 8px; border: 1px solid var(--agent); background: #fff;
+                color: var(--agent); font-size: .8rem; cursor: pointer; font-weight: 600; }
+  .appt .slot:hover { background: var(--agent); color: #fff; }
+  .appt .decl { background: none; border: none; color: var(--muted); font-size: .78rem; cursor: pointer; padding: 5px; }
+  .appt.confirmed { background: #e8f6ee; border-color: #bfe5cd; color: #14532d; }
   .short-item .actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; font-size: .8rem; }
   .short-item .actions a { white-space: nowrap; }
   .short-item input.note { width: 100%; border: none; border-top: 1px dashed var(--line); margin-top: 6px;
@@ -342,6 +349,16 @@ const I18N = {
     aroute: "Route",
     amsg: "Message",
     actmsg: "Drafted a first-contact message for “{x}”",
+    apptpropose: "Your agent proposes an appointment",
+    apptconfirmhint: "Pick a slot to confirm — an email draft opens and a calendar file is saved. Nothing is sent without you.",
+    apptdecline: "✕ decline",
+    apptconfirmed: "Appointment requested for",
+    apptsubject: "Appointment request",
+    apptmail: "My preferred appointment:",
+    apptics: "Appointment request via movetogermany.lol — awaiting provider confirmation",
+    actapptprop: "Proposed {n} appointment slots for “{x}”",
+    actapptconf: "Confirmed an appointment slot at “{x}” — email draft + calendar file created",
+    actapptdecl: "Declined the appointment proposal for “{x}”",
     statbiz: "real businesses",
     statcats: "categories",
     stattools: "WebMCP tools",
@@ -428,6 +445,16 @@ const I18N = {
     aroute: "Route",
     amsg: "Nachricht",
     actmsg: "Kontakt-Entwurf für „{x}“ erstellt",
+    apptpropose: "Dein Agent schlägt einen Termin vor",
+    apptconfirmhint: "Slot anklicken zum Bestätigen — es öffnet sich ein Mail-Entwurf und eine Kalenderdatei wird gespeichert. Ohne dich wird nichts verschickt.",
+    apptdecline: "✕ ablehnen",
+    apptconfirmed: "Termin angefragt für",
+    apptsubject: "Terminanfrage",
+    apptmail: "Mein Wunschtermin:",
+    apptics: "Terminanfrage über movetogermany.lol — Bestätigung durch Anbieter ausstehend",
+    actapptprop: "{n} Terminvorschläge für „{x}“ gemacht",
+    actapptconf: "Termin-Slot bei „{x}“ bestätigt — Mail-Entwurf + Kalenderdatei erstellt",
+    actapptdecl: "Terminvorschlag für „{x}“ abgelehnt",
     statbiz: "echte Betriebe",
     statcats: "Branchen",
     stattools: "WebMCP-Tools",
@@ -563,7 +590,7 @@ function sharePlan(ev) {
   const payload = { plz: state.plz, profile: state.profile, shortlist: state.shortlist.map(x => ({
     slug: x.slug, name: x.name, city: x.city, distance_km: x.distance_km,
     phone: x.phone, email: x.email, website: x.website, lat: x.lat, lon: x.lon,
-    booking_url: x.booking_url, note: x.note, by: x.by })) };
+    booking_url: x.booking_url, note: x.note, by: x.by, appt: x.appt || null })) };
   const hash = "#plan=" + btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
   navigator.clipboard.writeText(location.origin + "/" + hash).then(() => {
     const b = ev.target; const orig = b.textContent; b.textContent = t("shared");
@@ -693,6 +720,18 @@ function renderShortlist(flashId) {
       (it.booking_url ? '<a href="' + esc(it.booking_url) + '" target="_blank" rel="noopener">📅 ' + t("book") + "</a>" : "") +
       '<a href="#" onclick="copyOutreach(event,' + it.id + ')">✉️ ' + t("amsg") + "</a>" +
       "</div>" +
+      (it.appt && it.appt.status === "proposed"
+        ? '<div class="appt">🗓️ <b>' + t("apptpropose") + "</b>" +
+          (it.appt.service ? " — " + esc(it.appt.service) : "") +
+          '<div class="slots">' + it.appt.slots.map((s, i) =>
+            '<button class="slot" onclick="confirmAppt(' + it.id + "," + i + ')">' + esc(fmtSlot(s)) + "</button>").join("") +
+          '<button class="decl" onclick="declineAppt(' + it.id + ')">' + t("apptdecline") + "</button></div>" +
+          '<div class="hint" style="margin-top:4px">' + t("apptconfirmhint") + "</div></div>"
+        : "") +
+      (it.appt && it.appt.status === "confirmed"
+        ? '<div class="appt confirmed">✅ ' + t("apptconfirmed") + " <b>" + esc(fmtSlot(it.appt.chosen)) + "</b>" +
+          (it.appt.service ? " — " + esc(it.appt.service) : "") + "</div>"
+        : "") +
       '<input class="note" placeholder="' + esc(t("noteph")) + '" value="' + esc(it.note || "") +
       '" onchange="setNoteUI(' + it.id + ', this.value)">';
     box.appendChild(el);
@@ -837,6 +876,61 @@ function planMarkdown() {
   return lines.join("\n");
 }
 
+function fmtSlot(iso) {
+  try {
+    return new Date(iso).toLocaleString(lang === "de" ? "de-DE" : "en-GB",
+      { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  } catch (e) { return iso; }
+}
+
+function buildICS(it) {
+  const dt = new Date(it.appt.chosen);
+  const pad = (n) => String(n).padStart(2, "0");
+  const stamp = (d) => d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate()) +
+    "T" + pad(d.getHours()) + pad(d.getMinutes()) + "00";
+  const end = new Date(dt.getTime() + 45 * 60000);
+  return ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//movetogermany.lol//EN",
+    "BEGIN:VEVENT",
+    "UID:" + it.id + "-" + dt.getTime() + "@movetogermany.lol",
+    "DTSTART:" + stamp(dt), "DTEND:" + stamp(end),
+    "STATUS:TENTATIVE",
+    "SUMMARY:" + (it.appt.service ? it.appt.service + " — " : "") + it.name,
+    "LOCATION:" + (it.city || ""),
+    "DESCRIPTION:" + t("apptics") + (it.phone ? " · " + it.phone : ""),
+    "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+}
+
+function confirmAppt(id, idx) {
+  const it = state.shortlist.find(x => x.id === id);
+  if (!it || !it.appt) return;
+  it.appt.chosen = it.appt.slots[idx];
+  it.appt.status = "confirmed";
+  saveLocal(); renderShortlist(id);
+  addActivity("human", t("actapptconf").replace("{x}", it.name));
+  // Kalenderdatei anbieten
+  const blob = new Blob([buildICS(it)], { type: "text/calendar" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "termin-" + (it.name || "anbieter").toLowerCase().replace(/[^a-z0-9]+/g, "-") + ".ics";
+  a.click();
+  // Mail-Entwurf, wenn E-Mail bekannt
+  if (it.email) {
+    const txt = outreachDraft(it, lang) + "\n\n" + t("apptmail") + " " + fmtSlot(it.appt.chosen) +
+      (it.appt.service ? " (" + it.appt.service + ")" : "");
+    location.href = "mailto:" + it.email + "?subject=" +
+      encodeURIComponent(t("apptsubject") + (it.appt.service ? ": " + it.appt.service : "")) +
+      "&body=" + encodeURIComponent(txt);
+  }
+}
+
+function declineAppt(id) {
+  const it = state.shortlist.find(x => x.id === id);
+  if (!it) return;
+  delete it.appt;
+  saveLocal(); renderShortlist(id);
+  addActivity("human", t("actapptdecl").replace("{x}", it.name));
+}
+
 function outreachDraft(it, language) {
   const p = state.profile;
   const who_en = p.household === "family" ? "We're a family moving to the area"
@@ -888,11 +982,18 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
   if (!window.isSecureContext || !mc || typeof mc.registerTool !== "function") return;
 
   const T = (o) => ({ content: [{ type: "text", text: typeof o === "string" ? o : JSON.stringify(o) }] });
+  /* Vorgeschlagene icons-Member (Shape = MCP-Icon/W3C-ImageResource) — siehe
+     docs/webmcp-tool-icons-proposal.md; von heutigen Implementierungen ignoriert. */
+  window.TOOL_ICONS = [
+    { src: "/icon-192.png", sizes: "192x192", mimeType: "image/png" },
+    { src: "/favicon.svg", mimeType: "image/svg+xml" },
+  ];
   window.__mc = mc;
   const A = (text) => addActivity("agent", text);
 
   mc.registerTool({
     name: "list_categories",
+    icons: window.TOOL_ICONS,
     description: "List all 80+ business categories of the underlying German directory network " +
       "(slug, label, emoji) plus which ones are pre-selected as everyday essentials. Call this first " +
       "to learn valid category slugs. Read-only.",
@@ -904,6 +1005,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "get_profile",
+    icons: window.TOOL_ICONS,
     description: "Read the shared arrival profile: household (solo/couple/family), pet, language needs " +
       "(en_only/de_ok), mobility (walk/bike/car) and profession. Use it to personalize every decision — " +
       "categories, job queries, outreach drafts. For null fields, FIRST fill in what you already know " +
@@ -916,6 +1018,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "set_profile",
+    icons: window.TOOL_ICONS,
     description: "Update the shared arrival profile (partial update; only provided fields change). " +
       "The user sees every change immediately, and relevant categories are auto-added (pet → vet & pet " +
       "store, family → hospital & tutoring, car → gas station & repair shop, bike → bike repair). " +
@@ -942,6 +1045,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "set_home_plz",
+    icons: window.TOOL_ICONS,
     description: "Set the user's new home postal code (German PLZ) — the center of all searches. " +
       "Call generate_starter_plan or find_nearby afterwards. Changes page state.",
     inputSchema: { type: "object", properties: {
@@ -952,6 +1056,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "find_nearby",
+    icons: window.TOOL_ICONS,
     description: "Search the closest providers of ONE category around the configured PLZ and render them " +
       "on the page for the user. Returns JSON with name, city, distance in km, phone, website, rating. " +
       "category must be a slug from list_categories. Requires set_home_plz first.",
@@ -971,6 +1076,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "generate_starter_plan",
+    icons: window.TOOL_ICONS,
     description: "The one-step relocation helper: searches the configured PLZ across the essential " +
       "categories in parallel (or a provided list of category slugs) and puts the CLOSEST provider per " +
       "category into the shared plan. Existing plan entries are kept. Everything renders on the page " +
@@ -998,6 +1104,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "add_to_shortlist",
+    icons: window.TOOL_ICONS,
     description: "Add one concrete provider from the current search results (find_nearby / " +
       "generate_starter_plan) to the shared plan. Reference it by category slug + exact name.",
     inputSchema: { type: "object", properties: {
@@ -1020,6 +1127,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "remove_from_shortlist",
+    icons: window.TOOL_ICONS,
     description: "Remove one entry from the shared plan (id from get_shortlist). Only when the user " +
       "wants it — never silently delete entries the human saved themselves.",
     inputSchema: { type: "object", properties: {
@@ -1035,6 +1143,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "get_shortlist",
+    icons: window.TOOL_ICONS,
     description: "Read the shared plan including the user's handwritten NOTES and who created each " +
       "entry (human/agent). Call before modifying or summarizing the plan. Read-only.",
     inputSchema: { type: "object", properties: {} },
@@ -1044,6 +1153,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "set_note",
+    icons: window.TOOL_ICONS,
     description: "Write or update a note on a plan entry (e.g. 'book an appointment', 'open till 6pm " +
       "weekdays'). The user sees the note in the plan immediately.",
     inputSchema: { type: "object", properties: {
@@ -1060,7 +1170,33 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
   });
 
   mc.registerTool({
+    name: "propose_appointment",
+    icons: window.TOOL_ICONS,
+    description: "Propose 1-3 concrete appointment slots for one provider on the plan (e.g. after the " +
+      "user said when they are free). The proposal renders on the page; the HUMAN confirms a slot with " +
+      "one click — that opens a pre-written email to the provider and saves a tentative calendar (.ics) " +
+      "file. Nothing is ever sent automatically. Check get_shortlist afterwards for the confirmed slot.",
+    inputSchema: { type: "object", properties: {
+      id: { type: "integer", description: "Plan entry id from get_shortlist" },
+      slots: { type: "array", minItems: 1, maxItems: 3,
+        items: { type: "string", description: "ISO 8601 date-time, e.g. 2026-09-02T14:00" },
+        description: "1-3 proposed slots in the user's local time" },
+      service: { type: "string", description: "Optional service, e.g. \"men's haircut\", \"first checkup\"" },
+    }, required: ["id", "slots"] },
+    execute: async ({ id, slots, service }) => {
+      const it = state.shortlist.find(x => x.id === id);
+      if (!it) return T("Error: unknown id " + id);
+      it.appt = { slots: slots.slice(0, 3), service: service || null, status: "proposed", chosen: null };
+      saveLocal(); renderShortlist(id);
+      A(t("actapptprop").replace("{n}", it.appt.slots.length).replace("{x}", it.name));
+      return T({ ok: true, status: "proposed",
+        note: "Rendered on the page. The user must confirm a slot; nothing is sent automatically." });
+    },
+  });
+
+  mc.registerTool({
     name: "draft_outreach",
+    icons: window.TOOL_ICONS,
     description: "Draft a ready-to-send first-contact message (email/phone text) to one provider on the " +
       "plan — asking about availability and English communication, and including the user's note on that " +
       "entry as a question. Returns the draft plus the provider's email/phone if known; refine it before " +
@@ -1081,6 +1217,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "find_bookable",
+    icons: window.TOOL_ICONS,
     description: "Unified booking lookup: online-bookable service providers (hairdresser, massage, physio, " +
       "vet, driving school …) around the configured PLZ, normalized across booking platforms with one deep " +
       "link each — booking completes on the provider's platform. Renders results for the user. " +
@@ -1103,6 +1240,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "find_jobs",
+    icons: window.TOOL_ICONS,
     description: "Search real job openings around the configured PLZ via the OFFICIAL German Federal " +
       "Employment Agency (Bundesagentur fuer Arbeit) API. Returns title, employer, city, salary range " +
       "when stated, home-office flag and an official application link per job, plus the total count. " +
@@ -1127,6 +1265,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "get_paperwork_checklist",
+    icons: window.TOOL_ICONS,
     description: "Return the German bureaucracy starter pack: the ordered official steps after moving " +
       "(Anmeldung, tax ID, health insurance, bank account, Kindergeld child benefit, Buergergeld, " +
       "broadcasting fee) with official government links only. Use when the user asks about paperwork, " +
@@ -1146,6 +1285,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
       exportCtl = new AbortController();
       mc.registerTool({
         name: "export_plan",
+        icons: window.TOOL_ICONS,
         description: "Return the shared plan as ready-to-use Markdown (for a chat summary, message or " +
           "file). Only registered while the plan has entries. Read-only, changes nothing.",
         inputSchema: { type: "object", properties: {} },
@@ -1159,6 +1299,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
       compareCtl = new AbortController();
       mc.registerTool({
         name: "compare_candidates",
+        icons: window.TOOL_ICONS,
         description: "Compare all currently loaded candidates of ONE category side by side (distance, " +
           "rating, review count, phone, website) and render the comparison table for the user. Only " +
           "registered while a category has 2+ results. Use before recommending one. Read-only.",

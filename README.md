@@ -35,6 +35,11 @@ This page is a **shared workspace** for both:
 - `find_jobs` searches real openings via the **official Federal Employment
   Agency API**; `get_paperwork_checklist` hands over the official
   bureaucracy steps (Anmeldung → tax ID → … → broadcasting fee).
+- **Appointments, human-in-the-loop**: the agent proposes concrete slots
+  (`propose_appointment`), the human confirms one with a click — which opens
+  a pre-written email to the provider and saves a tentative calendar file.
+  The write path always pauses for a person, exactly as the WebMCP threat
+  model intends.
 - Every plan entry carries **real actions**: call, website, route
   (Google Maps), online booking where the directory knows one, and a
   drafted first-contact message (`draft_outreach`) that folds the human's
@@ -46,9 +51,17 @@ This page is a **shared workspace** for both:
   link here from their footers and llms.txt files, so both crawlers and
   agents reading any network domain find the planner.
 
+## Shaping the standard
+
+Tool-level icons don't exist in WebMCP yet — so this repo ships a concrete
+proposal ([docs/webmcp-tool-icons-proposal.md](docs/webmcp-tool-icons-proposal.md),
+`icons` member mirroring MCP's `Icon`/W3C ImageResource) **and already
+registers every tool with that exact shape**, harmlessly ignored by today's
+implementations.
+
 ## WebMCP implementation
 
-**16 imperative tools** via `document.modelContext.registerTool` — typed
+**17 imperative tools** via `document.modelContext.registerTool` — typed
 JSON schemas, per-property descriptions, explicit `required` lists,
 `readOnlyHint` on read paths, `untrustedContentHint` where tools return
 human-written notes:
@@ -66,6 +79,7 @@ human-written notes:
 | `draft_outreach` | ready-to-send first-contact message per entry, uses the human's note |
 | `find_jobs` | official Bundesagentur für Arbeit data |
 | `find_bookable` | unified booking lookup across platforms (deep links) |
+| `propose_appointment` | agent proposes 1-3 slots; the **human confirms with one click** → email draft + tentative .ics — nothing is ever sent automatically |
 | `get_paperwork_checklist` | official links only |
 | `export_plan` | **conditional** — registered only while the plan has entries |
 | `compare_candidates` | **conditional** — registered only while a category has 2+ results |
