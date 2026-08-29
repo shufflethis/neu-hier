@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>neu hier — Ankommens-Planer für Mensch + Agent</title>
-<meta name="description" content="Neue Adresse? Mensch und KI-Agent bauen gemeinsam die Grundversorgung auf: Supermarkt, Ärzte, Friseur & 80 weitere Branchen — echte Daten, nach Entfernung sortiert.">
+<title>Arrive in Germany — a planner for you + your agent</title>
+<meta name="description" content="New address in Germany? You and your AI agent build your everyday essentials together: supermarket, doctors, dentist, hairdresser & 80 more categories — real data, sorted by distance.">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
   :root {
@@ -17,7 +17,10 @@
   body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
          background: var(--bg); color: var(--ink); line-height: 1.55; }
   .wrap { max-width: 1100px; margin: 0 auto; padding: 28px 18px 60px; }
-  .page-header { text-align: center; margin-bottom: 20px; }
+  .page-header { text-align: center; margin-bottom: 20px; position: relative; }
+  .lang { position: absolute; right: 0; top: 0; }
+  .lang button { padding: 6px 10px; font-size: .8rem; background: #eef1f4; color: var(--ink); font-weight: 600; }
+  .lang button.on { background: var(--accent); color: #fff; }
   .logo { font-size: 2.4rem; }
   h1 { font-size: 1.8rem; margin: 4px 0 6px; letter-spacing: -.02em; }
   .tagline { color: var(--muted); max-width: 620px; margin: 0 auto; }
@@ -62,73 +65,152 @@
   a { color: var(--accent); text-decoration: none; }
   .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
              clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-  @media (max-width: 860px) { .cols { grid-template-columns: 1fr; } }
+  @media (max-width: 860px) { .cols { grid-template-columns: 1fr; } .lang { position: static; margin-bottom: 8px; } }
 </style>
 </head>
 <body>
 <div class="wrap">
 <main id="main">
   <div class="page-header">
+    <div class="lang" role="group" aria-label="Language">
+      <button id="lang-en" onclick="setLang('en')">EN</button>
+      <button id="lang-de" onclick="setLang('de')">DE</button>
+    </div>
     <div class="logo">📦➡️🏙️</div>
-    <h1>neu hier — dein Ankommens-Planer</h1>
-    <p class="tagline">Neue Adresse? Du und dein KI-Agent baut gemeinsam die Grundversorgung auf:
-    Supermarkt, Ärzte, Friseur &amp; 80 weitere Branchen — echte Daten, nach Entfernung sortiert.</p>
-    <div class="agentbar">🤖 WebMCP aktiv — dein Browser-Agent kann diese Seite direkt bedienen</div>
+    <h1 data-i18n="title">Arrive in Germany — your arrival planner</h1>
+    <p class="tagline" data-i18n="tagline"></p>
+    <div class="agentbar" data-i18n="agentbar"></div>
   </div>
 
   <div class="cols">
     <section class="card">
       <form id="plzform" onsubmit="return false" role="search"
             toolname="set_home_location_form"
-            tooldescription="Setzt die neue Wohn-Postleitzahl und lädt die Grundversorgung in der Umgebung."
+            tooldescription="Set the new home postal code (German PLZ) and load nearby everyday essentials."
             toolautosubmit>
         <div class="search-row">
-          <label for="plz" class="sr-only">Neue Postleitzahl</label>
-          <input type="text" id="plz" name="plz" placeholder="Deine neue PLZ, z.&nbsp;B. 10115"
+          <label for="plz" class="sr-only" data-i18n="plzlabel">Postal code</label>
+          <input type="text" id="plz" name="plz" placeholder=""
                  inputmode="numeric" maxlength="5" pattern="[0-9]{5}" autocomplete="postal-code"
                  aria-invalid="false" aria-describedby="plz-hint plz-error" aria-errormessage="plz-error"
-                 toolparamdescription="Fünfstellige deutsche Postleitzahl der neuen Adresse, z. B. 10115">
-          <button type="submit" onclick="loadEssentials()">Loslegen</button>
+                 toolparamdescription="Five-digit German postal code (PLZ) of the new address, e.g. 10115">
+          <button type="submit" onclick="loadEssentials()" data-i18n="go">Get started</button>
         </div>
       </form>
-      <p class="hint" id="plz-hint">Wählt die Branchen unten ab oder dazu — „Loslegen" holt zu jeder die nächstgelegenen Anbieter.</p>
-      <p class="hint" id="plz-error" hidden>Bitte eine fünfstellige deutsche Postleitzahl eingeben.</p>
-      <div class="chips" id="chips" aria-label="Branchen-Auswahl"></div>
-      <div id="map" role="img" aria-label="Karte der gefundenen Anbieter"></div>
-      <h2>Gefunden</h2>
-      <div id="results" aria-live="polite"><p class="empty">Noch nichts gesucht — PLZ eingeben oder den Agenten bitten: „Bau mir die Grundversorgung für 10115 auf."</p></div>
+      <p class="hint" id="plz-hint" data-i18n="hint"></p>
+      <p class="hint" id="plz-error" hidden data-i18n="plzerr"></p>
+      <div class="chips" id="chips" aria-label="Categories"></div>
+      <div id="map" role="img" aria-label="Map of found providers"></div>
+      <h2 data-i18n="found">Found</h2>
+      <div id="results" aria-live="polite"></div>
     </section>
 
     <aside class="card">
-      <h2 style="margin-top:0">📋 Mein Plan <span id="count" style="color:var(--muted);font-weight:400"></span></h2>
-      <p class="hint">Violett = vom Agenten vorgeschlagen, blau = von dir gemerkt. Notizen einfach reintippen — dein Agent liest sie mit.</p>
-      <div id="shortlist" aria-live="polite"><p class="empty">Der Plan ist noch leer.</p></div>
+      <h2 style="margin-top:0">📋 <span data-i18n="plan">My plan</span> <span id="count" style="color:var(--muted);font-weight:400"></span></h2>
+      <p class="hint" data-i18n="planhint"></p>
+      <div id="shortlist" aria-live="polite"></div>
       <div style="display:flex; gap:8px; margin-top:12px;">
-        <button class="ghost" onclick="copyPlan()">Plan kopieren (Markdown)</button>
-        <button class="ghost" onclick="clearPlan()">Leeren</button>
+        <button class="ghost" onclick="copyPlan(event)" data-i18n="copy">Copy plan (Markdown)</button>
+        <button class="ghost" onclick="clearPlan()" data-i18n="clear">Clear</button>
       </div>
     </aside>
   </div>
 </main>
   <footer>
-    Datenschicht: das <a href="https://friseur-in-meiner-naehe.de/llms.txt">„in meiner Nähe"-Netzwerk</a> —
-    80+ agentenlesbare Branchenverzeichnisse (OpenStreetMap ODbL · Overture Maps CDLA) ·
+    <span data-i18n="datalayer">Data layer:</span>
+    <a href="https://friseur-in-meiner-naehe.de/llms.txt">"in meiner Nähe" network</a> —
+    <span data-i18n="datalayer2">80+ agent-readable German business directories (OpenStreetMap ODbL · Overture Maps CDLA)</span> ·
     <a href="/llms.txt">llms.txt</a> ·
     <a href="https://github.com/shufflethis/neu-hier">Open Source (MIT)</a><br>
-    🤖 Ein Projekt von <a href="https://agentifizierung.de" rel="noopener" target="_blank">Agentifizierung</a>
+    🤖 <span data-i18n="project">A project by</span> <a href="https://agentifizierung.de" rel="noopener" target="_blank">Agentifizierung</a>
   </footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
 "use strict";
-/* ============ Zustand ============ */
+/* ============ i18n ============ */
+const I18N = {
+  en: {
+    title: "Arrive in Germany — your arrival planner",
+    tagline: "New address in Germany? You and your AI agent build your everyday essentials together: supermarket, doctors, dentist, hairdresser & 80 more categories — real nationwide data, sorted by distance.",
+    agentbar: "🤖 WebMCP active — your browser agent can operate this page directly",
+    plzlabel: "New postal code",
+    plzph: "Your new postal code, e.g. 10115",
+    go: "Get started",
+    hint: "Toggle categories below — “Get started” fetches the closest providers for each. Or just tell your agent: “Set me up at 10115.”",
+    plzerr: "Please enter a five-digit German postal code.",
+    found: "Found",
+    resempty: "Nothing searched yet — enter a postal code, or ask your agent to build your starter plan.",
+    searching: "Searching across {n} categories …",
+    noresults: "Nothing found nearby.",
+    add: "+ save",
+    plan: "My plan",
+    planhint: "Purple = suggested by your agent, blue = saved by you. Type notes right into the entries — your agent reads them.",
+    planempty: "Your plan is still empty.",
+    byagent: "🤖 suggested by your agent",
+    noteph: "Note … (e.g. call them, check reviews)",
+    copy: "Copy plan (Markdown)",
+    copied: "Copied ✓",
+    clear: "Clear",
+    datalayer: "Data layer:",
+    datalayer2: "80+ agent-readable German business directories (OpenStreetMap ODbL · Overture Maps CDLA)",
+    project: "A project by",
+    planheader: "# My arrival plan",
+    plannote: "Note",
+    planfooter: "_Built with Arrive in Germany on top of the „in meiner Nähe“ network (OpenStreetMap/Overture)._",
+  },
+  de: {
+    title: "neu hier — dein Ankommens-Planer",
+    tagline: "Neue Adresse? Du und dein KI-Agent baut gemeinsam die Grundversorgung auf: Supermarkt, Ärzte, Friseur & 80 weitere Branchen — echte Daten, nach Entfernung sortiert.",
+    agentbar: "🤖 WebMCP aktiv — dein Browser-Agent kann diese Seite direkt bedienen",
+    plzlabel: "Neue Postleitzahl",
+    plzph: "Deine neue PLZ, z. B. 10115",
+    go: "Loslegen",
+    hint: "Branchen unten an-/abwählen — „Loslegen“ holt zu jeder die nächstgelegenen Anbieter. Oder sag deinem Agenten: „Bau mir die Grundversorgung für 10115 auf.“",
+    plzerr: "Bitte eine fünfstellige deutsche Postleitzahl eingeben.",
+    found: "Gefunden",
+    resempty: "Noch nichts gesucht — PLZ eingeben oder den Agenten bitten, den Starterplan zu bauen.",
+    searching: "Suche läuft über {n} Branchen …",
+    noresults: "Nichts in der Nähe gefunden.",
+    add: "+ merken",
+    plan: "Mein Plan",
+    planhint: "Violett = vom Agenten vorgeschlagen, blau = von dir gemerkt. Notizen einfach reintippen — dein Agent liest sie mit.",
+    planempty: "Der Plan ist noch leer.",
+    byagent: "🤖 vom Agenten vorgeschlagen",
+    noteph: "Notiz … (z. B. anrufen, Bewertungen checken)",
+    copy: "Plan kopieren (Markdown)",
+    copied: "Kopiert ✓",
+    clear: "Leeren",
+    datalayer: "Datenschicht:",
+    datalayer2: "80+ agentenlesbare Branchenverzeichnisse (OpenStreetMap ODbL · Overture Maps CDLA)",
+    project: "Ein Projekt von",
+    planheader: "# Mein Ankommens-Plan",
+    plannote: "Notiz",
+    planfooter: "_Erstellt mit neu-hier über das „in meiner Nähe“-Netzwerk (OpenStreetMap/Overture)._",
+  },
+};
+let lang = "en";
+function t(key) { return (I18N[lang] && I18N[lang][key]) || I18N.en[key] || key; }
+function setLang(l) {
+  lang = I18N[l] ? l : "en";
+  try { localStorage.setItem("neuhier-lang", lang); } catch (e) {}
+  document.documentElement.lang = lang;
+  document.title = t("title");
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = t(el.getAttribute("data-i18n")); });
+  document.getElementById("plz").placeholder = t("plzph");
+  document.getElementById("lang-en").className = lang === "en" ? "on" : "";
+  document.getElementById("lang-de").className = lang === "de" ? "on" : "";
+  renderResults(false); renderShortlist();
+}
+
+/* ============ State ============ */
 const state = {
   plz: null,
   results: {},            // slug -> {label, emoji, records: []}
   shortlist: [],          // {id, slug, label, emoji, name, city, distance_km, phone, website, lat, lon, note, by}
-  categories: [],         // Netzwerk-Katalog
-  selected: new Set(),    // gewählte slugs
+  categories: [],
+  selected: new Set(),
 };
 let map, markerLayer;
 let nextId = 1;
@@ -139,6 +221,7 @@ function saveLocal() {
 }
 function loadLocal() {
   try {
+    lang = localStorage.getItem("neuhier-lang") || "en";
     const d = JSON.parse(localStorage.getItem("neuhier") || "null");
     if (!d) return;
     state.plz = d.plz || null;
@@ -178,14 +261,14 @@ function renderResults(flash) {
   const box = document.getElementById("results");
   box.innerHTML = "";
   const slugs = Object.keys(state.results);
-  if (!slugs.length) { box.innerHTML = '<p class="empty">Keine Ergebnisse geladen.</p>'; return; }
+  if (!slugs.length) { box.innerHTML = '<p class="empty">' + t("resempty") + "</p>"; return; }
   for (const slug of slugs) {
     const cat = state.results[slug];
     const block = document.createElement("div");
     block.className = "catblock" + (flash ? " flash" : "");
     const recs = cat.records || [];
     let html = '<div class="cathead">' + esc(cat.emoji + " " + cat.label) + "</div>";
-    if (!recs.length) { html += '<p class="empty">Nichts in der Nähe gefunden.</p>'; }
+    if (!recs.length) { html += '<p class="empty">' + t("noresults") + "</p>"; }
     else {
       html += '<ul class="results">';
       for (let i = 0; i < recs.length; i++) {
@@ -195,7 +278,7 @@ function renderResults(flash) {
         html += '<li class="result"><div><div>' + esc(r.name) + rating + '</div>' +
           '<div class="meta">' + esc(r.city || "") + (dist ? " · " + dist : "") +
           (r.phone ? " · " + esc(r.phone) : "") + "</div></div>" +
-          '<button class="add" onclick="addFromResults(\'' + slug + "'," + i + ')">+ merken</button></li>';
+          '<button class="add" onclick="addFromResults(\'' + slug + "'," + i + ')">' + t("add") + "</button></li>";
       }
       html += "</ul>";
     }
@@ -209,18 +292,18 @@ function renderShortlist(flashId) {
   const box = document.getElementById("shortlist");
   document.getElementById("count").textContent = state.shortlist.length ? "(" + state.shortlist.length + ")" : "";
   box.innerHTML = "";
-  if (!state.shortlist.length) { box.innerHTML = '<p class="empty">Der Plan ist noch leer.</p>'; renderMap(); return; }
+  if (!state.shortlist.length) { box.innerHTML = '<p class="empty">' + t("planempty") + "</p>"; renderMap(); return; }
   for (const it of state.shortlist) {
     const el = document.createElement("div");
     el.className = "short-item" + (it.by === "agent" ? " by-agent" : "") + (it.id === flashId ? " flash" : "");
     el.innerHTML =
-      '<button class="rm" title="Entfernen" onclick="removeItem(' + it.id + ')">✕</button>' +
+      '<button class="rm" title="✕" onclick="removeItem(' + it.id + ')">✕</button>' +
       "<div><b>" + esc(it.emoji + " " + it.name) + "</b></div>" +
       '<div class="meta" style="color:var(--muted);font-size:.84rem">' + esc(it.label) +
       (it.city ? " · " + esc(it.city) : "") + (it.distance_km != null ? " · " + it.distance_km + " km" : "") +
       (it.phone ? " · " + esc(it.phone) : "") + "</div>" +
-      (it.by === "agent" ? '<div class="who">🤖 vom Agenten vorgeschlagen</div>' : "") +
-      '<input class="note" placeholder="Notiz … (z. B. anrufen, Bewertungen checken)" value="' + esc(it.note || "") +
+      (it.by === "agent" ? '<div class="who">' + t("byagent") + "</div>" : "") +
+      '<input class="note" placeholder="' + esc(t("noteph")) + '" value="' + esc(it.note || "") +
       '" onchange="setNoteUI(' + it.id + ', this.value)">';
     box.appendChild(el);
   }
@@ -249,7 +332,7 @@ function renderMap() {
   if (pts.length) map.fitBounds(pts, { padding: [24, 24], maxZoom: 14 });
 }
 
-/* ============ Aktionen (von Mensch UND Agent genutzt) ============ */
+/* ============ Actions (shared by human AND agent) ============ */
 function validatePlz(plz) { return /^[0-9]{5}$/.test(plz || ""); }
 
 async function setHome(plz) {
@@ -257,7 +340,7 @@ async function setHome(plz) {
   const err = document.getElementById("plz-error");
   if (!validatePlz(plz)) {
     input.setAttribute("aria-invalid", "true"); err.hidden = false;
-    throw new Error("Ungültige PLZ: " + plz);
+    throw new Error("Invalid PLZ: " + plz);
   }
   input.setAttribute("aria-invalid", "false"); err.hidden = true;
   input.value = plz;
@@ -277,8 +360,8 @@ async function fetchEssentials(cats) {
 async function loadEssentials() {
   const plz = document.getElementById("plz").value.trim();
   try { await setHome(plz); } catch (e) { return; }
-  document.getElementById("results").innerHTML = '<p class="empty">Suche läuft über ' +
-    state.selected.size + " Branchen …</p>";
+  document.getElementById("results").innerHTML =
+    '<p class="empty">' + t("searching").replace("{n}", state.selected.size) + "</p>";
   await fetchEssentials([...state.selected]);
   renderResults(false);
 }
@@ -309,28 +392,28 @@ function setNoteUI(id, note) {
 }
 
 function planMarkdown() {
-  const lines = ["# Mein Ankommens-Plan" + (state.plz ? " — PLZ " + state.plz : ""), ""];
+  const lines = [t("planheader") + (state.plz ? " — PLZ " + state.plz : ""), ""];
   for (const it of state.shortlist) {
     lines.push("- **" + it.emoji + " " + it.name + "** (" + it.label + ")" +
       (it.city ? ", " + it.city : "") +
       (it.distance_km != null ? ", " + it.distance_km + " km" : "") +
       (it.phone ? ", Tel. " + it.phone : "") +
       (it.website ? ", " + it.website : "") +
-      (it.note ? " — Notiz: " + it.note : ""));
+      (it.note ? " — " + t("plannote") + ": " + it.note : ""));
   }
-  lines.push("", "_Erstellt mit neu-hier über das „in meiner Nähe“-Netzwerk (OpenStreetMap/Overture)._");
+  lines.push("", t("planfooter"));
   return lines.join("\n");
 }
 
-function copyPlan() {
+function copyPlan(ev) {
   navigator.clipboard.writeText(planMarkdown()).then(() => {
-    const b = event.target; const t = b.textContent; b.textContent = "Kopiert ✓";
-    setTimeout(() => b.textContent = t, 1500);
+    const b = ev.target; const orig = b.textContent; b.textContent = t("copied");
+    setTimeout(() => { b.textContent = t("copy"); }, 1500);
   });
 }
 function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
-/* ============ WebMCP: die Agenten-Seite derselben Aktionen ============ */
+/* ============ WebMCP: the agent side of the same actions ============ */
 (function registerWebMCP() {
   const mc = (typeof document !== "undefined" && document.modelContext) ||
              (typeof navigator !== "undefined" && navigator.modelContext);
@@ -340,8 +423,9 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "list_categories",
-    description: "Listet alle 80+ Branchen des Netzwerks (slug, label, emoji) und welche als " +
-      "Grundversorgung vorausgewählt sind. Zuerst aufrufen, um gültige category-Werte zu kennen. Nur lesend.",
+    description: "List all 80+ business categories of the underlying German directory network " +
+      "(slug, label, emoji) plus which ones are pre-selected as everyday essentials. Call this first " +
+      "to learn valid category slugs. Read-only.",
     inputSchema: { type: "object", properties: {} },
     annotations: { readOnlyHint: true },
     execute: async () => T({ selected: [...state.selected],
@@ -350,25 +434,25 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "set_home_plz",
-    description: "Setzt die neue Wohn-Postleitzahl des Nutzers (Zentrum aller Suchen). " +
-      "Danach generate_starter_plan oder find_nearby aufrufen. Ändert den Seiten-Zustand.",
+    description: "Set the user's new home postal code (German PLZ) — the center of all searches. " +
+      "Call generate_starter_plan or find_nearby afterwards. Changes page state.",
     inputSchema: { type: "object", properties: {
-      plz: { type: "string", pattern: "^[0-9]{5}$", description: "Fünfstellige deutsche Postleitzahl, z. B. 10115" },
+      plz: { type: "string", pattern: "^[0-9]{5}$", description: "Five-digit German postal code, e.g. 10115" },
     }, required: ["plz"] },
     execute: async ({ plz }) => { await setHome(plz); return T({ ok: true, plz }); },
   });
 
   mc.registerTool({
     name: "find_nearby",
-    description: "Sucht die nächstgelegenen Anbieter EINER Branche rund um die gesetzte PLZ und zeigt sie " +
-      "dem Nutzer auf der Seite an. Liefert JSON mit Name, Ort, Entfernung km, Telefon, Website, Bewertung. " +
-      "category muss ein slug aus list_categories sein. Vorher set_home_plz aufrufen.",
+    description: "Search the closest providers of ONE category around the configured PLZ and render them " +
+      "on the page for the user. Returns JSON with name, city, distance in km, phone, website, rating. " +
+      "category must be a slug from list_categories. Requires set_home_plz first.",
     inputSchema: { type: "object", properties: {
-      category: { type: "string", description: "Branchen-Slug, z. B. supermarkt, zahnarzt, friseur" },
-      limit: { type: "integer", minimum: 1, maximum: 20, description: "Max. Ergebnisse (Standard 5)" },
+      category: { type: "string", description: "Category slug, e.g. supermarkt, zahnarzt (dentist), friseur (hairdresser)" },
+      limit: { type: "integer", minimum: 1, maximum: 20, description: "Max results (default 5)" },
     }, required: ["category"] },
-    execute: async ({ category, limit }, ctx) => {
-      if (!state.plz) return T("Fehler: Erst set_home_plz aufrufen.");
+    execute: async ({ category, limit }) => {
+      if (!state.plz) return T("Error: call set_home_plz first.");
       const data = await api("/api/search?cat=" + encodeURIComponent(category) +
         "&plz=" + state.plz + "&limit=" + (limit || 5));
       state.results[category] = data; renderResults(true);
@@ -378,16 +462,16 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "generate_starter_plan",
-    description: "Der Ein-Schritt-Umzugshelfer: sucht für die gesetzte PLZ parallel über die Grundversorgungs-" +
-      "Branchen (oder eine übergebene Liste) und legt je Branche den NÄCHSTGELEGENEN Anbieter in den " +
-      "gemeinsamen Plan. Bestehende Plan-Einträge bleiben erhalten. Zeigt alles sofort auf der Seite. " +
-      "Nutzer kann danach Einträge löschen, tauschen und Notizen ergänzen.",
+    description: "The one-step relocation helper: searches the configured PLZ across the essential " +
+      "categories in parallel (or a provided list of category slugs) and puts the CLOSEST provider per " +
+      "category into the shared plan. Existing plan entries are kept. Everything renders on the page " +
+      "immediately; the user can then remove, swap and annotate entries.",
     inputSchema: { type: "object", properties: {
       categories: { type: "array", items: { type: "string" },
-        description: "Optionale Liste von Branchen-Slugs; ohne Angabe die Standard-Grundversorgung (12 Branchen)" },
+        description: "Optional list of category slugs; without it the default 12 everyday essentials are used" },
     } },
     execute: async ({ categories }) => {
-      if (!state.plz) return T("Fehler: Erst set_home_plz aufrufen.");
+      if (!state.plz) return T("Error: call set_home_plz first.");
       const data = await fetchEssentials(categories && categories.length ? categories : [...state.selected]);
       let added = 0;
       for (const cat of data.categories) {
@@ -403,19 +487,19 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "add_to_shortlist",
-    description: "Fügt einen konkreten Anbieter aus den aktuellen Suchergebnissen (find_nearby/" +
-      "generate_starter_plan) dem gemeinsamen Plan hinzu. Anbieter über category-Slug + exakten Namen referenzieren.",
+    description: "Add one concrete provider from the current search results (find_nearby / " +
+      "generate_starter_plan) to the shared plan. Reference it by category slug + exact name.",
     inputSchema: { type: "object", properties: {
-      category: { type: "string", description: "Branchen-Slug des Anbieters" },
-      name: { type: "string", description: "Exakter Name aus den Suchergebnissen" },
+      category: { type: "string", description: "Category slug of the provider" },
+      name: { type: "string", description: "Exact name as returned in the search results" },
     }, required: ["category", "name"] },
     execute: async ({ category, name }) => {
       const cat = state.results[category];
-      if (!cat) return T("Fehler: Für diese Branche liegen keine Suchergebnisse vor — erst find_nearby.");
+      if (!cat) return T("Error: no search results for this category yet — call find_nearby first.");
       const rec = (cat.records || []).find(r => r.name === name);
-      if (!rec) return T("Fehler: '" + name + "' nicht in den Ergebnissen. Vorhanden: " +
+      if (!rec) return T("Error: '" + name + "' not in the results. Available: " +
         (cat.records || []).map(r => r.name).join(" | "));
-      if (state.shortlist.some(x => x.name === name && x.slug === category)) return T("Schon im Plan.");
+      if (state.shortlist.some(x => x.name === name && x.slug === category)) return T("Already in the plan.");
       const it = makeItem(category, rec, "agent");
       state.shortlist.push(it); saveLocal(); renderShortlist(it.id);
       return T({ ok: true, id: it.id });
@@ -424,18 +508,18 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "remove_from_shortlist",
-    description: "Entfernt einen Eintrag aus dem gemeinsamen Plan (id aus get_shortlist). Nur nutzen, " +
-      "wenn der Nutzer es möchte — vom Menschen gemerkte Einträge nicht ungefragt löschen.",
+    description: "Remove one entry from the shared plan (id from get_shortlist). Only when the user " +
+      "wants it — never silently delete entries the human saved themselves.",
     inputSchema: { type: "object", properties: {
-      id: { type: "integer", description: "Eintrags-ID aus get_shortlist" },
+      id: { type: "integer", description: "Entry id from get_shortlist" },
     }, required: ["id"] },
     execute: async ({ id }) => { removeItem(id); return T({ ok: true }); },
   });
 
   mc.registerTool({
     name: "get_shortlist",
-    description: "Liest den gemeinsamen Plan inklusive der handgeschriebenen NOTIZEN des Nutzers und wer " +
-      "jeden Eintrag angelegt hat (human/agent). Vor Änderungen oder Zusammenfassungen aufrufen. Nur lesend.",
+    description: "Read the shared plan including the user's handwritten NOTES and who created each " +
+      "entry (human/agent). Call before modifying or summarizing the plan. Read-only.",
     inputSchema: { type: "object", properties: {} },
     annotations: { readOnlyHint: true, untrustedContentHint: true },
     execute: async () => T({ plz: state.plz, items: state.shortlist }),
@@ -443,15 +527,15 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "set_note",
-    description: "Schreibt oder ergänzt eine Notiz an einem Plan-Eintrag (z. B. 'Termin vereinbaren', " +
-      "'werktags bis 18 Uhr'). Der Nutzer sieht die Notiz sofort im Plan.",
+    description: "Write or update a note on a plan entry (e.g. 'book an appointment', 'open till 6pm " +
+      "weekdays'). The user sees the note in the plan immediately.",
     inputSchema: { type: "object", properties: {
-      id: { type: "integer", description: "Eintrags-ID aus get_shortlist" },
-      note: { type: "string", description: "Notiztext (ersetzt die bisherige Notiz)" },
+      id: { type: "integer", description: "Entry id from get_shortlist" },
+      note: { type: "string", description: "Note text (replaces the previous note)" },
     }, required: ["id", "note"] },
     execute: async ({ id, note }) => {
       const it = state.shortlist.find(x => x.id === id);
-      if (!it) return T("Fehler: unbekannte id " + id);
+      if (!it) return T("Error: unknown id " + id);
       it.note = note; saveLocal(); renderShortlist(id);
       return T({ ok: true });
     },
@@ -459,8 +543,8 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 
   mc.registerTool({
     name: "export_plan",
-    description: "Gibt den gemeinsamen Plan als fertiges Markdown zurück (für Chat-Zusammenfassung, " +
-      "Nachricht oder Datei). Nur lesend, verändert nichts.",
+    description: "Return the shared plan as ready-to-use Markdown (for a chat summary, message or file). " +
+      "Read-only, changes nothing.",
     inputSchema: { type: "object", properties: {} },
     annotations: { readOnlyHint: true },
     execute: async () => T(planMarkdown()),
@@ -470,6 +554,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
 /* ============ Boot ============ */
 (async function boot() {
   loadLocal();
+  setLang(lang);
   const cats = await api("/api/categories");
   state.categories = cats.categories;
   if (!state.selected.size) state.selected = new Set(cats.essentials);
