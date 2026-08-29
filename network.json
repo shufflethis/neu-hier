@@ -1,0 +1,650 @@
+[
+ {
+  "slug": "elektriker",
+  "label": "Elektriker",
+  "plural": "Elektriker",
+  "emoji": "⚡",
+  "domain": "elektrikerinmeinernaehe.de",
+  "port": 8788
+ },
+ {
+  "slug": "immobilienmakler",
+  "label": "Immobilienmakler",
+  "plural": "Immobilienmakler",
+  "emoji": "🏠",
+  "domain": "immobilienmaklerinmeinnernaehe.de",
+  "port": 8789
+ },
+ {
+  "slug": "autoglas",
+  "label": "Autoglas",
+  "plural": "Autoglas-Betriebe",
+  "emoji": "🚗",
+  "domain": "autoglasinmeinernaehe.de",
+  "port": 8790
+ },
+ {
+  "slug": "autowerkstatt",
+  "label": "Autowerkstatt",
+  "plural": "Autowerkstätten",
+  "emoji": "🔧",
+  "domain": "autowerkstatt-in-meiner-naehe.de",
+  "port": 8791
+ },
+ {
+  "slug": "autohaus",
+  "label": "Autohaus",
+  "plural": "Autohäuser",
+  "emoji": "🚙",
+  "domain": "autohaus-in-meiner-naehe.de",
+  "port": 8792
+ },
+ {
+  "slug": "moebelhaus",
+  "label": "Möbelhaus",
+  "plural": "Möbelhäuser",
+  "emoji": "🛋️",
+  "domain": "moebelhaus-in-meiner-naehe.de",
+  "port": 8793
+ },
+ {
+  "slug": "baecker",
+  "label": "Bäcker",
+  "plural": "Bäckereien",
+  "emoji": "🥐",
+  "domain": "baecker-in-meiner-naehe.de",
+  "port": 8794
+ },
+ {
+  "slug": "supermarkt",
+  "label": "Supermarkt",
+  "plural": "Supermärkte",
+  "emoji": "🛒",
+  "domain": "supermarkt-in-meiner-naehe.de",
+  "port": 8795
+ },
+ {
+  "slug": "friseur",
+  "label": "Friseur",
+  "plural": "Friseure",
+  "emoji": "💇",
+  "domain": "friseur-in-meiner-naehe.de",
+  "port": 8796
+ },
+ {
+  "slug": "tankstelle",
+  "label": "Tankstelle",
+  "plural": "Tankstellen",
+  "emoji": "⛽",
+  "domain": "tankstelle-in-meiner-naehe.de",
+  "port": 8797
+ },
+ {
+  "slug": "bank",
+  "label": "Bank",
+  "plural": "Banken",
+  "emoji": "🏦",
+  "domain": "bank-in-meiner-naehe.de",
+  "port": 8798
+ },
+ {
+  "slug": "hotel",
+  "label": "Hotel",
+  "plural": "Hotels",
+  "emoji": "🏨",
+  "domain": "hotel-in-meiner-naehe.de",
+  "port": 8799
+ },
+ {
+  "slug": "kino",
+  "label": "Kino",
+  "plural": "Kinos",
+  "emoji": "🎬",
+  "domain": "kino-in-meiner-naehe.de",
+  "port": 8800
+ },
+ {
+  "slug": "krankenhaus",
+  "label": "Krankenhaus",
+  "plural": "Krankenhäuser",
+  "emoji": "🏥",
+  "domain": "krankenhaus-in-meiner-naehe.de",
+  "port": 8801
+ },
+ {
+  "slug": "baumarkt",
+  "label": "Baumarkt",
+  "plural": "Baumärkte",
+  "emoji": "🧰",
+  "domain": "baumarkt-in-meiner-naehe.de",
+  "port": 8802
+ },
+ {
+  "slug": "optiker",
+  "label": "Optiker",
+  "plural": "Optiker",
+  "emoji": "👓",
+  "domain": "optiker-in-meiner-naehe.de",
+  "port": 8803
+ },
+ {
+  "slug": "drogerie",
+  "label": "Drogerie",
+  "plural": "Drogerien",
+  "emoji": "🧴",
+  "domain": "drogerie-in-meiner-naehe.de",
+  "port": 8804
+ },
+ {
+  "slug": "arztpraxis",
+  "label": "Arztpraxis",
+  "plural": "Arztpraxen",
+  "emoji": "🩺",
+  "domain": "arztpraxis-in-meiner-naehe.de",
+  "port": 8805
+ },
+ {
+  "slug": "blumenladen",
+  "label": "Blumenladen",
+  "plural": "Blumenläden",
+  "emoji": "💐",
+  "domain": "blumenladen-in-meiner-naehe.de",
+  "port": 8806
+ },
+ {
+  "slug": "schuhgeschaeft",
+  "label": "Schuhgeschäft",
+  "plural": "Schuhgeschäfte",
+  "emoji": "👟",
+  "domain": "schuhgeschaeft-in-meiner-naehe.de",
+  "port": 8807
+ },
+ {
+  "slug": "elektrofachgeschaeft",
+  "label": "Elektrofachgeschäft",
+  "plural": "Elektrofachgeschäfte",
+  "emoji": "🔌",
+  "domain": "elektrofachgeschaeft-in-meiner-naehe.de",
+  "port": 8808
+ },
+ {
+  "slug": "dachdecker",
+  "label": "Dachdecker",
+  "plural": "Dachdecker",
+  "emoji": "🏠",
+  "domain": "dachdecker-in-meiner-naehe.de",
+  "port": 8809
+ },
+ {
+  "slug": "sanitaer",
+  "label": "Sanitär",
+  "plural": "Sanitärbetriebe",
+  "emoji": "🚿",
+  "domain": "sanitaer-in-meiner-naehe.de",
+  "port": 8810
+ },
+ {
+  "slug": "fahrradwerkstatt",
+  "label": "Fahrradwerkstatt",
+  "plural": "Fahrradwerkstätten",
+  "emoji": "🚲",
+  "domain": "fahrradwerkstatt-in-meiner-naehe.de",
+  "port": 8811
+ },
+ {
+  "slug": "reifenwechsel",
+  "label": "Reifenwechsel",
+  "plural": "Reifenbetriebe",
+  "emoji": "🛞",
+  "domain": "reifenwechsel-in-meiner-naehe.de",
+  "port": 8812
+ },
+ {
+  "slug": "tierklinik",
+  "label": "Tierklinik",
+  "plural": "Tierkliniken",
+  "emoji": "🐾",
+  "domain": "tierklinik-in-meiner-naehe.de",
+  "port": 8813
+ },
+ {
+  "slug": "physiotherapie",
+  "label": "Physiotherapie",
+  "plural": "Physiotherapiepraxen",
+  "emoji": "🤸",
+  "domain": "physiotherapie-in-meiner-naehe.de",
+  "port": 8814
+ },
+ {
+  "slug": "steuerberater",
+  "label": "Steuerberater",
+  "plural": "Steuerberater",
+  "emoji": "🧾",
+  "domain": "steuerberater-in-meiner-naehe.de",
+  "port": 8815
+ },
+ {
+  "slug": "versicherungsmakler",
+  "label": "Versicherungsmakler",
+  "plural": "Versicherungsmakler",
+  "emoji": "🛡️",
+  "domain": "versicherungsmakler-in-meiner-naehe.de",
+  "port": 8816
+ },
+ {
+  "slug": "werbeagentur",
+  "label": "Werbeagentur",
+  "plural": "Werbeagenturen",
+  "emoji": "📣",
+  "domain": "werbeagentur-in-meiner-naehe.de",
+  "port": 8817
+ },
+ {
+  "slug": "massage",
+  "label": "Massage",
+  "plural": "Massagepraxen",
+  "emoji": "💆",
+  "domain": "massage-in-meiner-naehe.de",
+  "port": 8818
+ },
+ {
+  "slug": "kosmetikstudio",
+  "label": "Kosmetikstudio",
+  "plural": "Kosmetikstudios",
+  "emoji": "💅",
+  "domain": "kosmetikstudio-in-meiner-naehe.de",
+  "port": 8819
+ },
+ {
+  "slug": "hoerakustiker",
+  "label": "Hörakustiker",
+  "plural": "Hörakustiker",
+  "emoji": "👂",
+  "domain": "hoerakustiker-in-meiner-naehe.de",
+  "port": 8820
+ },
+ {
+  "slug": "fensterbauer",
+  "label": "Fensterbauer",
+  "plural": "Fensterbaubetriebe",
+  "emoji": "🪟",
+  "domain": "fensterbauer-in-meiner-naehe.de",
+  "port": 8821
+ },
+ {
+  "slug": "kuechenstudio",
+  "label": "Küchenstudio",
+  "plural": "Küchenstudios",
+  "emoji": "🍽️",
+  "domain": "kuechenstudio-in-meiner-naehe.de",
+  "port": 8822
+ },
+ {
+  "slug": "schneiderei",
+  "label": "Schneiderei",
+  "plural": "Schneidereien",
+  "emoji": "🧵",
+  "domain": "schneiderei-in-meiner-naehe.de",
+  "port": 8823
+ },
+ {
+  "slug": "copyshop",
+  "label": "Copyshop",
+  "plural": "Copyshops",
+  "emoji": "🖨️",
+  "domain": "copyshop-in-meiner-naehe.de",
+  "port": 8824
+ },
+ {
+  "slug": "tattoo",
+  "label": "Tattoostudio",
+  "plural": "Tattoostudios",
+  "emoji": "🎨",
+  "domain": "tattoo-in-meiner-naehe.de",
+  "port": 8825
+ },
+ {
+  "slug": "eisdiele",
+  "label": "Eisdiele",
+  "plural": "Eisdielen",
+  "emoji": "🍦",
+  "domain": "eisdiele-in-meiner-naehe.de",
+  "port": 8826
+ },
+ {
+  "slug": "umzugsunternehmen",
+  "label": "Umzugsunternehmen",
+  "plural": "Umzugsunternehmen",
+  "emoji": "📦",
+  "domain": "umzugsunternehmen-in-meiner-naehe.de",
+  "port": 8827
+ },
+ {
+  "slug": "oelwechsel",
+  "label": "Ölwechsel",
+  "plural": "Ölwechsel-Betriebe",
+  "emoji": "🛢️",
+  "domain": "oelwechsel-in-meiner-naehe.de",
+  "port": 8828
+ },
+ {
+  "slug": "kfz-gutachter",
+  "label": "Kfz-Gutachter",
+  "plural": "Kfz-Gutachter",
+  "emoji": "📋",
+  "domain": "kfz-gutachter-in-meiner-naehe.de",
+  "port": 8829
+ },
+ {
+  "slug": "detektiv",
+  "label": "Detektei",
+  "plural": "Detekteien",
+  "emoji": "🕵️",
+  "domain": "detektiv-in-meiner-naehe.de",
+  "port": 8830
+ },
+ {
+  "slug": "goldankauf",
+  "label": "Goldankauf",
+  "plural": "Goldankauf-Stellen",
+  "emoji": "🪙",
+  "domain": "goldankauf-in-meiner-naehe.de",
+  "port": 8831
+ },
+ {
+  "slug": "nachhilfe",
+  "label": "Nachhilfe",
+  "plural": "Nachhilfeinstitute",
+  "emoji": "📚",
+  "domain": "nachhilfe-in-meiner-naehe.de",
+  "port": 8832
+ },
+ {
+  "slug": "tattooentfernung",
+  "label": "Tattooentfernung",
+  "plural": "Tattooentfernungs-Anbieter",
+  "emoji": "🔥",
+  "domain": "tattooentfernung-in-meiner-naehe.de",
+  "port": 8833
+ },
+ {
+  "slug": "laserhaarentfernung",
+  "label": "Laserhaarentfernung",
+  "plural": "Laserhaarentfernungs-Studios",
+  "emoji": "✨",
+  "domain": "laserhaarentfernung-in-meiner-naehe.de",
+  "port": 8834
+ },
+ {
+  "slug": "klimaanlage-installieren",
+  "label": "Klimaanlagen-Installateur",
+  "plural": "Klimatechnik-Betriebe",
+  "emoji": "❄️",
+  "domain": "klimaanlage-installieren-in-meiner-naehe.de",
+  "port": 8835
+ },
+ {
+  "slug": "hausverwaltung",
+  "label": "Hausverwaltung",
+  "plural": "Hausverwaltungen",
+  "emoji": "🏢",
+  "domain": "hausverwaltung-in-meiner-naehe.de",
+  "port": 8836
+ },
+ {
+  "slug": "containerdienst",
+  "label": "Containerdienst",
+  "plural": "Containerdienste",
+  "emoji": "🗑️",
+  "domain": "containerdienst-in-meiner-naehe.de",
+  "port": 8837
+ },
+ {
+  "slug": "entruempelung",
+  "label": "Entrümpelung",
+  "plural": "Entrümpelungs-Betriebe",
+  "emoji": "📦",
+  "domain": "entruempelung-in-meiner-naehe.de",
+  "port": 8838
+ },
+ {
+  "slug": "fahrzeugaufbereitung",
+  "label": "Fahrzeugaufbereitung",
+  "plural": "Fahrzeugaufbereitungs-Betriebe",
+  "emoji": "🧽",
+  "domain": "fahrzeugaufbereitung-in-meiner-naehe.de",
+  "port": 8839
+ },
+ {
+  "slug": "schuldnerberatung",
+  "label": "Schuldnerberatung",
+  "plural": "Schuldnerberatungsstellen",
+  "emoji": "💶",
+  "domain": "schuldnerberatung-in-meiner-naehe.de",
+  "port": 8840
+ },
+ {
+  "slug": "pflegedienst",
+  "label": "Pflegedienst",
+  "plural": "Pflegedienste",
+  "emoji": "🩹",
+  "domain": "pflegedienst-in-meiner-naehe.de",
+  "port": 8841
+ },
+ {
+  "slug": "pizzeria",
+  "label": "Pizzeria",
+  "plural": "Pizzerien",
+  "emoji": "🍕",
+  "domain": "pizzeria-in-meiner-naehe.de",
+  "port": 8842
+ },
+ {
+  "slug": "schaedlingsbekaempfung",
+  "label": "Schädlingsbekämpfung",
+  "plural": "Schädlingsbekämpfer",
+  "emoji": "🐜",
+  "domain": "schaedlingsbekaempfung-in-meiner-naehe.de",
+  "port": 8843
+ },
+ {
+  "slug": "heilpraktiker",
+  "label": "Heilpraktiker",
+  "plural": "Heilpraktiker",
+  "emoji": "🌿",
+  "domain": "heilpraktiker-in-meiner-naehe.de",
+  "port": 8844
+ },
+ {
+  "slug": "nagelstudio",
+  "label": "Nagelstudio",
+  "plural": "Nagelstudios",
+  "emoji": "💅",
+  "domain": "nagelstudio-in-meiner-naehe.de",
+  "port": 8845
+ },
+ {
+  "slug": "transporter-mieten",
+  "label": "Transporter mieten",
+  "plural": "Transporter-Vermietungen",
+  "emoji": "🚐",
+  "domain": "transporter-mieten-in-meiner-naehe.de",
+  "port": 8846
+ },
+ {
+  "slug": "handyreparatur",
+  "label": "Handyreparatur",
+  "plural": "Handyreparatur-Betriebe",
+  "emoji": "📱",
+  "domain": "handyreparatur-in-meiner-naehe.de",
+  "port": 8847
+ },
+ {
+  "slug": "parkhaus",
+  "label": "Parkhaus",
+  "plural": "Parkhäuser",
+  "emoji": "🅿️",
+  "domain": "parkhaus-in-meiner-naehe.de",
+  "port": 8848
+ },
+ {
+  "slug": "zahnimplantate",
+  "label": "Zahnimplantate",
+  "plural": "Implantologie-Praxen",
+  "emoji": "🦷",
+  "domain": "zahnimplantate-in-meiner-naehe.de",
+  "port": 8849
+ },
+ {
+  "slug": "yoga-studio",
+  "label": "Yoga-Studio",
+  "plural": "Yoga-Studios",
+  "emoji": "🧘",
+  "domain": "yoga-studio-in-meiner-naehe.de",
+  "port": 8850
+ },
+ {
+  "slug": "pilates",
+  "label": "Pilates",
+  "plural": "Pilates-Studios",
+  "emoji": "🤸‍♀️",
+  "domain": "pilates-in-meiner-naehe.de",
+  "port": 8851
+ },
+ {
+  "slug": "solaranlage",
+  "label": "Solaranlagen-Anbieter",
+  "plural": "Solaranlagen-Anbieter",
+  "emoji": "☀️",
+  "domain": "solaranlage-in-meiner-naehe.de",
+  "port": 8852
+ },
+ {
+  "slug": "heizungsbauer",
+  "label": "Heizungsbauer",
+  "plural": "Heizungsbaubetriebe",
+  "emoji": "🔥",
+  "domain": "heizungsbauer-in-meiner-naehe.de",
+  "port": 8853
+ },
+ {
+  "slug": "restaurant",
+  "label": "Restaurant",
+  "plural": "Restaurants",
+  "emoji": "🍽️",
+  "domain": "restaurant-in-der-naehe.de",
+  "port": 8854
+ },
+ {
+  "slug": "cafe",
+  "label": "Café",
+  "plural": "Cafés",
+  "emoji": "☕",
+  "domain": "cafe-in-der-naehe.de",
+  "port": 8855
+ },
+ {
+  "slug": "fahrschule",
+  "label": "Fahrschule",
+  "plural": "Fahrschulen",
+  "emoji": "🚗",
+  "domain": "fahrschuleinmeinernaehe.de",
+  "port": 8856
+ },
+ {
+  "slug": "hausgeraetekundendienst",
+  "label": "Hausgeräte-Kundendienst",
+  "plural": "Hausgeräte-Kundendienste",
+  "emoji": "🔧",
+  "domain": "kundendienst-in-meiner-naehe.de",
+  "port": 8857
+ },
+ {
+  "slug": "datenrettung",
+  "label": "Datenrettung",
+  "plural": "Datenrettungs-Dienste",
+  "emoji": "💾",
+  "domain": "datenrettung-in-meiner-naehe.de",
+  "port": 8858
+ },
+ {
+  "slug": "rohrreinigung",
+  "label": "Rohrreinigung",
+  "plural": "Rohrreinigungs-Dienste",
+  "emoji": "🚽",
+  "domain": "rohrreinigunginmeinernaehe.de",
+  "port": 8859
+ },
+ {
+  "slug": "zahnarzt",
+  "label": "Zahnarzt",
+  "plural": "Zahnärzte",
+  "emoji": "🦷",
+  "domain": "zahnarztinmeinernaehe.de",
+  "port": 8861
+ },
+ {
+  "slug": "notar",
+  "label": "Notar",
+  "plural": "Notare",
+  "emoji": "⚖️",
+  "domain": "notar-in-meiner-naehe.de",
+  "port": 8862
+ },
+ {
+  "slug": "maler",
+  "label": "Maler",
+  "plural": "Malerbetriebe",
+  "emoji": "🎨",
+  "domain": "malerinmeinernaehe.de",
+  "port": 8863
+ },
+ {
+  "slug": "gaertner",
+  "label": "Gärtner",
+  "plural": "Gärtner",
+  "emoji": "🌳",
+  "domain": "gaertner-in-meiner-naehe.de",
+  "port": 8864
+ },
+ {
+  "slug": "gartenbau",
+  "label": "Gartenbau",
+  "plural": "Gartenbau-Betriebe",
+  "emoji": "🌿",
+  "domain": "gartenbau-in-meiner-naehe.de",
+  "port": 8865
+ },
+ {
+  "slug": "fliesenleger",
+  "label": "Fliesenleger",
+  "plural": "Fliesenleger",
+  "emoji": "🧱",
+  "domain": "fliesenleger-in-meiner-naehe.de",
+  "port": 8866
+ },
+ {
+  "slug": "zoohandlung",
+  "label": "Zoohandlung",
+  "plural": "Zoohandlungen",
+  "emoji": "🐾",
+  "domain": "zoohandlung-in-meiner-naehe.de",
+  "port": 8867
+ },
+ {
+  "slug": "gebaeudereinigung",
+  "label": "Gebäudereinigung",
+  "plural": "Gebäudereinigungs-Firmen",
+  "emoji": "🧹",
+  "domain": "gebaeudereinigunginmeinernaehe.de",
+  "port": 8869
+ },
+ {
+  "slug": "augenarzt",
+  "label": "Augenarzt",
+  "plural": "Augenärzte",
+  "emoji": "👁️",
+  "domain": "augenarzt-in-meiner-naehe.de",
+  "port": 8870
+ }
+]

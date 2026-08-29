@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>neu hier — Ankommens-Planer für Mensch + Agent</title>
+<meta name="description" content="Neue Adresse? Mensch und KI-Agent bauen gemeinsam die Grundversorgung auf: Supermarkt, Ärzte, Friseur & 80 weitere Branchen — echte Daten, nach Entfernung sortiert.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f6f7f9; --card: #fff; --ink: #1a1d21; --muted: #5c6570;
+    --accent: #0e7490; --accent2: #b45309; --line: #e3e6ea; --radius: 14px;
+    --agent: #7c3aed;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+         background: var(--bg); color: var(--ink); line-height: 1.55; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 28px 18px 60px; }
+  .page-header { text-align: center; margin-bottom: 20px; }
+  .logo { font-size: 2.4rem; }
+  h1 { font-size: 1.8rem; margin: 4px 0 6px; letter-spacing: -.02em; }
+  .tagline { color: var(--muted); max-width: 620px; margin: 0 auto; }
+  .agentbar { display: inline-flex; gap: 8px; align-items: center; margin-top: 10px; font-size: .85rem;
+              background: #f3eefe; color: var(--agent); border: 1px solid #e4d9fb; padding: 6px 12px; border-radius: 999px; }
+  .cols { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; align-items: start; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+          padding: 18px; box-shadow: 0 1px 2px rgba(16,24,40,.05); }
+  .search-row { display: flex; gap: 10px; }
+  input[type=text] { flex: 1; padding: 12px 14px; font-size: 1rem; border: 1px solid var(--line); border-radius: 10px; }
+  input[type=text]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(14,116,144,.12); }
+  button { padding: 12px 20px; font-size: .98rem; font-weight: 600; color: #fff; background: var(--accent);
+           border: 0; border-radius: 10px; cursor: pointer; }
+  button.ghost { background: #eef1f4; color: var(--ink); font-weight: 500; }
+  .hint { color: var(--muted); font-size: .86rem; margin: 8px 0 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); background: #fff;
+          font-size: .86rem; cursor: pointer; user-select: none; }
+  .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+  #map { height: 300px; border-radius: var(--radius); border: 1px solid var(--line); margin-top: 16px; }
+  h2 { font-size: 1.15rem; margin: 20px 0 10px; }
+  .catblock { margin-bottom: 14px; }
+  .cathead { font-weight: 650; margin: 10px 0 6px; }
+  ul.results { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  li.result { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: #fff;
+              display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+  li.result .meta { color: var(--muted); font-size: .85rem; }
+  li.result .add { padding: 6px 10px; font-size: .82rem; background: #eef7f9; color: var(--accent); border: 1px solid #d3e8ee; }
+  .rating { color: var(--accent2); font-weight: 600; }
+  .short-item { border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 10px;
+                padding: 10px 12px; margin-bottom: 8px; background: #fff; }
+  .short-item.by-agent { border-left-color: var(--agent); }
+  .short-item .who { font-size: .72rem; color: var(--agent); }
+  .short-item .rm { float: right; background: none; border: none; color: var(--muted); cursor: pointer; padding: 0 4px; font-size: 1rem; }
+  .short-item input.note { width: 100%; border: none; border-top: 1px dashed var(--line); margin-top: 6px;
+                           padding: 4px 0 0; font-size: .84rem; color: var(--muted); }
+  .short-item input.note:focus { outline: none; color: var(--ink); }
+  .empty { color: var(--muted); text-align: center; padding: 14px; font-size: .9rem; }
+  .flash { animation: flash 1.4s ease-out; }
+  @keyframes flash { 0% { background: #f3eefe; } 100% { background: #fff; } }
+  footer { margin-top: 36px; color: var(--muted); font-size: .84rem; text-align: center; }
+  a { color: var(--accent); text-decoration: none; }
+  .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden;
+             clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  @media (max-width: 860px) { .cols { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<main id="main">
+  <div class="page-header">
+    <div class="logo">📦➡️🏙️</div>
+    <h1>neu hier — dein Ankommens-Planer</h1>
+    <p class="tagline">Neue Adresse? Du und dein KI-Agent baut gemeinsam die Grundversorgung auf:
+    Supermarkt, Ärzte, Friseur &amp; 80 weitere Branchen — echte Daten, nach Entfernung sortiert.</p>
+    <div class="agentbar">🤖 WebMCP aktiv — dein Browser-Agent kann diese Seite direkt bedienen</div>
+  </div>
+
+  <div class="cols">
+    <section class="card">
+      <form id="plzform" onsubmit="return false" role="search"
+            toolname="set_home_location_form"
+            tooldescription="Setzt die neue Wohn-Postleitzahl und lädt die Grundversorgung in der Umgebung."
+            toolautosubmit>
+        <div class="search-row">
+          <label for="plz" class="sr-only">Neue Postleitzahl</label>
+          <input type="text" id="plz" name="plz" placeholder="Deine neue PLZ, z.&nbsp;B. 10115"
+                 inputmode="numeric" maxlength="5" pattern="[0-9]{5}" autocomplete="postal-code"
+                 aria-invalid="false" aria-describedby="plz-hint plz-error" aria-errormessage="plz-error"
+                 toolparamdescription="Fünfstellige deutsche Postleitzahl der neuen Adresse, z. B. 10115">
+          <button type="submit" onclick="loadEssentials()">Loslegen</button>
+        </div>
+      </form>
+      <p class="hint" id="plz-hint">Wählt die Branchen unten ab oder dazu — „Loslegen" holt zu jeder die nächstgelegenen Anbieter.</p>
+      <p class="hint" id="plz-error" hidden>Bitte eine fünfstellige deutsche Postleitzahl eingeben.</p>
+      <div class="chips" id="chips" aria-label="Branchen-Auswahl"></div>
+      <div id="map" role="img" aria-label="Karte der gefundenen Anbieter"></div>
+      <h2>Gefunden</h2>
+      <div id="results" aria-live="polite"><p class="empty">Noch nichts gesucht — PLZ eingeben oder den Agenten bitten: „Bau mir die Grundversorgung für 10115 auf."</p></div>
+    </section>
+
+    <aside class="card">
+      <h2 style="margin-top:0">📋 Mein Plan <span id="count" style="color:var(--muted);font-weight:400"></span></h2>
+      <p class="hint">Violett = vom Agenten vorgeschlagen, blau = von dir gemerkt. Notizen einfach reintippen — dein Agent liest sie mit.</p>
+      <div id="shortlist" aria-live="polite"><p class="empty">Der Plan ist noch leer.</p></div>
+      <div style="display:flex; gap:8px; margin-top:12px;">
+        <button class="ghost" onclick="copyPlan()">Plan kopieren (Markdown)</button>
+        <button class="ghost" onclick="clearPlan()">Leeren</button>
+      </div>
+    </aside>
+  </div>
+</main>
+  <footer>
+    Datenschicht: das <a href="https://friseur-in-meiner-naehe.de/llms.txt">„in meiner Nähe"-Netzwerk</a> —
+    80+ agentenlesbare Branchenverzeichnisse (OpenStreetMap ODbL · Overture Maps CDLA) ·
+    <a href="/llms.txt">llms.txt</a> ·
+    <a href="https://github.com/shufflethis/neu-hier">Open Source (MIT)</a><br>
+    🤖 Ein Projekt von <a href="https://agentifizierung.de" rel="noopener" target="_blank">Agentifizierung</a>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+"use strict";
+/* ============ Zustand ============ */
+const state = {
+  plz: null,
+  results: {},            // slug -> {label, emoji, records: []}
+  shortlist: [],          // {id, slug, label, emoji, name, city, distance_km, phone, website, lat, lon, note, by}
+  categories: [],         // Netzwerk-Katalog
+  selected: new Set(),    // gewählte slugs
+};
+let map, markerLayer;
+let nextId = 1;
+
+function saveLocal() {
+  try { localStorage.setItem("neuhier", JSON.stringify({
+    plz: state.plz, shortlist: state.shortlist, selected: [...state.selected], nextId })); } catch (e) {}
+}
+function loadLocal() {
+  try {
+    const d = JSON.parse(localStorage.getItem("neuhier") || "null");
+    if (!d) return;
+    state.plz = d.plz || null;
+    state.shortlist = d.shortlist || [];
+    state.selected = new Set(d.selected || []);
+    nextId = d.nextId || (state.shortlist.length + 1);
+    if (state.plz) document.getElementById("plz").value = state.plz;
+  } catch (e) {}
+}
+
+/* ============ API ============ */
+async function api(path) {
+  const res = await fetch(path);
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  return res.json();
+}
+
+/* ============ UI ============ */
+function esc(s) { return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+function renderChips() {
+  const box = document.getElementById("chips");
+  box.innerHTML = "";
+  for (const c of state.categories) {
+    const el = document.createElement("span");
+    el.className = "chip" + (state.selected.has(c.slug) ? " on" : "");
+    el.textContent = c.emoji + " " + c.label;
+    el.setAttribute("role", "button");
+    el.setAttribute("aria-pressed", state.selected.has(c.slug));
+    el.onclick = () => { state.selected.has(c.slug) ? state.selected.delete(c.slug) : state.selected.add(c.slug);
+                         saveLocal(); renderChips(); };
+    box.appendChild(el);
+  }
+}
+
+function renderResults(flash) {
+  const box = document.getElementById("results");
+  box.innerHTML = "";
+  const slugs = Object.keys(state.results);
+  if (!slugs.length) { box.innerHTML = '<p class="empty">Keine Ergebnisse geladen.</p>'; return; }
+  for (const slug of slugs) {
+    const cat = state.results[slug];
+    const block = document.createElement("div");
+    block.className = "catblock" + (flash ? " flash" : "");
+    const recs = cat.records || [];
+    let html = '<div class="cathead">' + esc(cat.emoji + " " + cat.label) + "</div>";
+    if (!recs.length) { html += '<p class="empty">Nichts in der Nähe gefunden.</p>'; }
+    else {
+      html += '<ul class="results">';
+      for (let i = 0; i < recs.length; i++) {
+        const r = recs[i];
+        const dist = r.distance_km != null ? r.distance_km + " km" : "";
+        const rating = r.gmaps_rating != null ? ' <span class="rating">★ ' + r.gmaps_rating + "</span>" : "";
+        html += '<li class="result"><div><div>' + esc(r.name) + rating + '</div>' +
+          '<div class="meta">' + esc(r.city || "") + (dist ? " · " + dist : "") +
+          (r.phone ? " · " + esc(r.phone) : "") + "</div></div>" +
+          '<button class="add" onclick="addFromResults(\'' + slug + "'," + i + ')">+ merken</button></li>';
+      }
+      html += "</ul>";
+    }
+    block.innerHTML = html;
+    box.appendChild(block);
+  }
+  renderMap();
+}
+
+function renderShortlist(flashId) {
+  const box = document.getElementById("shortlist");
+  document.getElementById("count").textContent = state.shortlist.length ? "(" + state.shortlist.length + ")" : "";
+  box.innerHTML = "";
+  if (!state.shortlist.length) { box.innerHTML = '<p class="empty">Der Plan ist noch leer.</p>'; renderMap(); return; }
+  for (const it of state.shortlist) {
+    const el = document.createElement("div");
+    el.className = "short-item" + (it.by === "agent" ? " by-agent" : "") + (it.id === flashId ? " flash" : "");
+    el.innerHTML =
+      '<button class="rm" title="Entfernen" onclick="removeItem(' + it.id + ')">✕</button>' +
+      "<div><b>" + esc(it.emoji + " " + it.name) + "</b></div>" +
+      '<div class="meta" style="color:var(--muted);font-size:.84rem">' + esc(it.label) +
+      (it.city ? " · " + esc(it.city) : "") + (it.distance_km != null ? " · " + it.distance_km + " km" : "") +
+      (it.phone ? " · " + esc(it.phone) : "") + "</div>" +
+      (it.by === "agent" ? '<div class="who">🤖 vom Agenten vorgeschlagen</div>' : "") +
+      '<input class="note" placeholder="Notiz … (z. B. anrufen, Bewertungen checken)" value="' + esc(it.note || "") +
+      '" onchange="setNoteUI(' + it.id + ', this.value)">';
+    box.appendChild(el);
+  }
+  renderMap();
+}
+
+function renderMap() {
+  if (!map) return;
+  markerLayer.clearLayers();
+  const pts = [];
+  for (const slug of Object.keys(state.results)) {
+    for (const r of (state.results[slug].records || [])) {
+      if (r.lat && r.lon) {
+        L.circleMarker([r.lat, r.lon], { radius: 5, color: "#0e7490", fillOpacity: .7 })
+          .bindPopup(esc(r.name)).addTo(markerLayer);
+        pts.push([r.lat, r.lon]);
+      }
+    }
+  }
+  for (const it of state.shortlist) {
+    if (it.lat && it.lon) {
+      L.marker([it.lat, it.lon]).bindPopup("📋 " + esc(it.name)).addTo(markerLayer);
+      pts.push([it.lat, it.lon]);
+    }
+  }
+  if (pts.length) map.fitBounds(pts, { padding: [24, 24], maxZoom: 14 });
+}
+
+/* ============ Aktionen (von Mensch UND Agent genutzt) ============ */
+function validatePlz(plz) { return /^[0-9]{5}$/.test(plz || ""); }
+
+async function setHome(plz) {
+  const input = document.getElementById("plz");
+  const err = document.getElementById("plz-error");
+  if (!validatePlz(plz)) {
+    input.setAttribute("aria-invalid", "true"); err.hidden = false;
+    throw new Error("Ungültige PLZ: " + plz);
+  }
+  input.setAttribute("aria-invalid", "false"); err.hidden = true;
+  input.value = plz;
+  state.plz = plz; saveLocal();
+  return plz;
+}
+
+async function fetchEssentials(cats) {
+  const catParam = cats && cats.length ? "&cats=" + cats.join(",") : "";
+  const data = await api("/api/essentials?plz=" + state.plz + catParam);
+  for (const cat of data.categories) {
+    state.results[cat.slug] = cat;
+  }
+  return data;
+}
+
+async function loadEssentials() {
+  const plz = document.getElementById("plz").value.trim();
+  try { await setHome(plz); } catch (e) { return; }
+  document.getElementById("results").innerHTML = '<p class="empty">Suche läuft über ' +
+    state.selected.size + " Branchen …</p>";
+  await fetchEssentials([...state.selected]);
+  renderResults(false);
+}
+
+function makeItem(slug, rec, by) {
+  const cat = state.results[slug] || {};
+  return { id: nextId++, slug, label: cat.label || slug, emoji: cat.emoji || "📍",
+    name: rec.name, city: rec.city, distance_km: rec.distance_km, phone: rec.phone,
+    website: rec.website, lat: rec.lat, lon: rec.lon, note: "", by: by || "human" };
+}
+
+function addFromResults(slug, idx) {
+  const rec = (state.results[slug] || {}).records[idx];
+  if (!rec) return;
+  if (state.shortlist.some(x => x.name === rec.name && x.slug === slug)) return;
+  const it = makeItem(slug, rec, "human");
+  state.shortlist.push(it); saveLocal(); renderShortlist(it.id);
+}
+
+function removeItem(id) {
+  state.shortlist = state.shortlist.filter(x => x.id !== id);
+  saveLocal(); renderShortlist();
+}
+
+function setNoteUI(id, note) {
+  const it = state.shortlist.find(x => x.id === id);
+  if (it) { it.note = note; saveLocal(); }
+}
+
+function planMarkdown() {
+  const lines = ["# Mein Ankommens-Plan" + (state.plz ? " — PLZ " + state.plz : ""), ""];
+  for (const it of state.shortlist) {
+    lines.push("- **" + it.emoji + " " + it.name + "** (" + it.label + ")" +
+      (it.city ? ", " + it.city : "") +
+      (it.distance_km != null ? ", " + it.distance_km + " km" : "") +
+      (it.phone ? ", Tel. " + it.phone : "") +
+      (it.website ? ", " + it.website : "") +
+      (it.note ? " — Notiz: " + it.note : ""));
+  }
+  lines.push("", "_Erstellt mit neu-hier über das „in meiner Nähe“-Netzwerk (OpenStreetMap/Overture)._");
+  return lines.join("\n");
+}
+
+function copyPlan() {
+  navigator.clipboard.writeText(planMarkdown()).then(() => {
+    const b = event.target; const t = b.textContent; b.textContent = "Kopiert ✓";
+    setTimeout(() => b.textContent = t, 1500);
+  });
+}
+function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
+
+/* ============ WebMCP: die Agenten-Seite derselben Aktionen ============ */
+(function registerWebMCP() {
+  const mc = (typeof document !== "undefined" && document.modelContext) ||
+             (typeof navigator !== "undefined" && navigator.modelContext);
+  if (!window.isSecureContext || !mc || typeof mc.registerTool !== "function") return;
+
+  const T = (o) => ({ content: [{ type: "text", text: typeof o === "string" ? o : JSON.stringify(o) }] });
+
+  mc.registerTool({
+    name: "list_categories",
+    description: "Listet alle 80+ Branchen des Netzwerks (slug, label, emoji) und welche als " +
+      "Grundversorgung vorausgewählt sind. Zuerst aufrufen, um gültige category-Werte zu kennen. Nur lesend.",
+    inputSchema: { type: "object", properties: {} },
+    annotations: { readOnlyHint: true },
+    execute: async () => T({ selected: [...state.selected],
+      categories: state.categories.map(c => ({ slug: c.slug, label: c.label, emoji: c.emoji })) }),
+  });
+
+  mc.registerTool({
+    name: "set_home_plz",
+    description: "Setzt die neue Wohn-Postleitzahl des Nutzers (Zentrum aller Suchen). " +
+      "Danach generate_starter_plan oder find_nearby aufrufen. Ändert den Seiten-Zustand.",
+    inputSchema: { type: "object", properties: {
+      plz: { type: "string", pattern: "^[0-9]{5}$", description: "Fünfstellige deutsche Postleitzahl, z. B. 10115" },
+    }, required: ["plz"] },
+    execute: async ({ plz }) => { await setHome(plz); return T({ ok: true, plz }); },
+  });
+
+  mc.registerTool({
+    name: "find_nearby",
+    description: "Sucht die nächstgelegenen Anbieter EINER Branche rund um die gesetzte PLZ und zeigt sie " +
+      "dem Nutzer auf der Seite an. Liefert JSON mit Name, Ort, Entfernung km, Telefon, Website, Bewertung. " +
+      "category muss ein slug aus list_categories sein. Vorher set_home_plz aufrufen.",
+    inputSchema: { type: "object", properties: {
+      category: { type: "string", description: "Branchen-Slug, z. B. supermarkt, zahnarzt, friseur" },
+      limit: { type: "integer", minimum: 1, maximum: 20, description: "Max. Ergebnisse (Standard 5)" },
+    }, required: ["category"] },
+    execute: async ({ category, limit }, ctx) => {
+      if (!state.plz) return T("Fehler: Erst set_home_plz aufrufen.");
+      const data = await api("/api/search?cat=" + encodeURIComponent(category) +
+        "&plz=" + state.plz + "&limit=" + (limit || 5));
+      state.results[category] = data; renderResults(true);
+      return T(data);
+    },
+  });
+
+  mc.registerTool({
+    name: "generate_starter_plan",
+    description: "Der Ein-Schritt-Umzugshelfer: sucht für die gesetzte PLZ parallel über die Grundversorgungs-" +
+      "Branchen (oder eine übergebene Liste) und legt je Branche den NÄCHSTGELEGENEN Anbieter in den " +
+      "gemeinsamen Plan. Bestehende Plan-Einträge bleiben erhalten. Zeigt alles sofort auf der Seite. " +
+      "Nutzer kann danach Einträge löschen, tauschen und Notizen ergänzen.",
+    inputSchema: { type: "object", properties: {
+      categories: { type: "array", items: { type: "string" },
+        description: "Optionale Liste von Branchen-Slugs; ohne Angabe die Standard-Grundversorgung (12 Branchen)" },
+    } },
+    execute: async ({ categories }) => {
+      if (!state.plz) return T("Fehler: Erst set_home_plz aufrufen.");
+      const data = await fetchEssentials(categories && categories.length ? categories : [...state.selected]);
+      let added = 0;
+      for (const cat of data.categories) {
+        const rec = (cat.records || [])[0];
+        if (rec && !state.shortlist.some(x => x.slug === cat.slug)) {
+          state.shortlist.push(makeItem(cat.slug, rec, "agent")); added++;
+        }
+      }
+      saveLocal(); renderResults(true); renderShortlist();
+      return T({ ok: true, added, plan: state.shortlist.map(x => ({ id: x.id, category: x.slug, name: x.name, distance_km: x.distance_km })) });
+    },
+  });
+
+  mc.registerTool({
+    name: "add_to_shortlist",
+    description: "Fügt einen konkreten Anbieter aus den aktuellen Suchergebnissen (find_nearby/" +
+      "generate_starter_plan) dem gemeinsamen Plan hinzu. Anbieter über category-Slug + exakten Namen referenzieren.",
+    inputSchema: { type: "object", properties: {
+      category: { type: "string", description: "Branchen-Slug des Anbieters" },
+      name: { type: "string", description: "Exakter Name aus den Suchergebnissen" },
+    }, required: ["category", "name"] },
+    execute: async ({ category, name }) => {
+      const cat = state.results[category];
+      if (!cat) return T("Fehler: Für diese Branche liegen keine Suchergebnisse vor — erst find_nearby.");
+      const rec = (cat.records || []).find(r => r.name === name);
+      if (!rec) return T("Fehler: '" + name + "' nicht in den Ergebnissen. Vorhanden: " +
+        (cat.records || []).map(r => r.name).join(" | "));
+      if (state.shortlist.some(x => x.name === name && x.slug === category)) return T("Schon im Plan.");
+      const it = makeItem(category, rec, "agent");
+      state.shortlist.push(it); saveLocal(); renderShortlist(it.id);
+      return T({ ok: true, id: it.id });
+    },
+  });
+
+  mc.registerTool({
+    name: "remove_from_shortlist",
+    description: "Entfernt einen Eintrag aus dem gemeinsamen Plan (id aus get_shortlist). Nur nutzen, " +
+      "wenn der Nutzer es möchte — vom Menschen gemerkte Einträge nicht ungefragt löschen.",
+    inputSchema: { type: "object", properties: {
+      id: { type: "integer", description: "Eintrags-ID aus get_shortlist" },
+    }, required: ["id"] },
+    execute: async ({ id }) => { removeItem(id); return T({ ok: true }); },
+  });
+
+  mc.registerTool({
+    name: "get_shortlist",
+    description: "Liest den gemeinsamen Plan inklusive der handgeschriebenen NOTIZEN des Nutzers und wer " +
+      "jeden Eintrag angelegt hat (human/agent). Vor Änderungen oder Zusammenfassungen aufrufen. Nur lesend.",
+    inputSchema: { type: "object", properties: {} },
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
+    execute: async () => T({ plz: state.plz, items: state.shortlist }),
+  });
+
+  mc.registerTool({
+    name: "set_note",
+    description: "Schreibt oder ergänzt eine Notiz an einem Plan-Eintrag (z. B. 'Termin vereinbaren', " +
+      "'werktags bis 18 Uhr'). Der Nutzer sieht die Notiz sofort im Plan.",
+    inputSchema: { type: "object", properties: {
+      id: { type: "integer", description: "Eintrags-ID aus get_shortlist" },
+      note: { type: "string", description: "Notiztext (ersetzt die bisherige Notiz)" },
+    }, required: ["id", "note"] },
+    execute: async ({ id, note }) => {
+      const it = state.shortlist.find(x => x.id === id);
+      if (!it) return T("Fehler: unbekannte id " + id);
+      it.note = note; saveLocal(); renderShortlist(id);
+      return T({ ok: true });
+    },
+  });
+
+  mc.registerTool({
+    name: "export_plan",
+    description: "Gibt den gemeinsamen Plan als fertiges Markdown zurück (für Chat-Zusammenfassung, " +
+      "Nachricht oder Datei). Nur lesend, verändert nichts.",
+    inputSchema: { type: "object", properties: {} },
+    annotations: { readOnlyHint: true },
+    execute: async () => T(planMarkdown()),
+  });
+})();
+
+/* ============ Boot ============ */
+(async function boot() {
+  loadLocal();
+  const cats = await api("/api/categories");
+  state.categories = cats.categories;
+  if (!state.selected.size) state.selected = new Set(cats.essentials);
+  renderChips();
+  map = L.map("map", { scrollWheelZoom: false }).setView([51.16, 10.45], 6);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    { attribution: '© OpenStreetMap contributors' }).addTo(map);
+  markerLayer = L.layerGroup().addTo(map);
+  renderShortlist();
+  document.getElementById("plz").addEventListener("keydown", e => {
+    if (e.key === "Enter") { e.preventDefault(); loadEssentials(); } });
+})();
+</script>
+</body>
+</html>
