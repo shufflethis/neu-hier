@@ -9,7 +9,11 @@
 <meta property="og:title" content="move to germany, lol — the arrival planner for you + your AI agent">
 <meta property="og:description" content="Because the paperwork is enough drama. You and your AI agent build your everyday essentials together: supermarket, doctors, dentist & 80 more categories — real nationwide data, sorted by distance.">
 <meta property="og:url" content="https://movetogermany.lol/">
+<meta property="og:image" content="https://movetogermany.lol/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://movetogermany.lol/og-image.png">
 <meta name="description" content="move to germany, lol — because the paperwork is enough drama. You and your AI agent build your everyday essentials together: supermarket, doctors, dentist & 80 more categories — real data, sorted by distance.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="alternate" type="text/markdown" href="https://movetogermany.lol/index.md">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script type="application/ld+json">
@@ -50,6 +54,10 @@
   .tagline { color: var(--muted); max-width: 620px; margin: 0 auto; }
   .agentbar { display: inline-flex; gap: 8px; align-items: center; margin-top: 10px; font-size: .85rem;
               background: #f3eefe; color: var(--agent); border: 1px solid #e4d9fb; padding: 6px 12px; border-radius: 999px; }
+  .stats { display: flex; gap: 10px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 18px; text-align: center; }
+  .stat b { display: block; font-size: 1.25rem; color: var(--accent); }
+  .stat span { font-size: .74rem; color: var(--muted); }
   .hero { display: flex; gap: 22px; align-items: center; margin-bottom: 18px;
           background: linear-gradient(105deg, #fdf6e3 0%, #fff 55%); }
   .hero svg { flex: 0 0 150px; height: auto; }
@@ -124,6 +132,12 @@
     <h1 data-i18n="title">move to germany, lol</h1>
     <p class="tagline" data-i18n="tagline"></p>
     <div class="agentbar" data-i18n="agentbar"></div>
+    <div class="stats">
+      <div class="stat"><b>1.16M</b><span data-i18n="statbiz">real businesses</span></div>
+      <div class="stat"><b>81</b><span data-i18n="statcats">categories</span></div>
+      <div class="stat"><b>12+1</b><span data-i18n="stattools">WebMCP tools</span></div>
+      <div class="stat"><b>0 €</b><span data-i18n="statfree">free &amp; open source</span></div>
+    </div>
     <div class="prompts" id="prompts">
       <button onclick="copyPrompt(this)">💬 "I'm moving to Berlin, postal code 10115 — set me up with the essentials."</button>
       <button onclick="copyPrompt(this)">💬 "Compare the hairdressers and pick the best rated one for me."</button>
@@ -287,6 +301,10 @@ const I18N = {
     why6: "Sundays are silent. Legally. Buy your groceries on Saturday or perish.",
     why7: "Cash only, sorry — the fax machine is still warming up.",
     why8: "Lost two world wars, working overtime to help avoid the third. You're welcome here.",
+    statbiz: "real businesses",
+    statcats: "categories",
+    stattools: "WebMCP tools",
+    statfree: "free & open source",
     share: "Share link",
     shared: "Link copied ✓",
     sharedloaded: "Opened a shared plan",
@@ -349,6 +367,10 @@ const I18N = {
     why6: "Sonntags ist Ruhe. Gesetzlich. Kauf samstags ein oder verhungere stilvoll.",
     why7: "Nur Bargeld, sorry — das Faxgerät wärmt noch auf.",
     why8: "Zwei Weltkriege verloren, seitdem Überstunden gegen den dritten. Du bist willkommen.",
+    statbiz: "echte Betriebe",
+    statcats: "Branchen",
+    stattools: "WebMCP-Tools",
+    statfree: "kostenlos & Open Source",
     share: "Link teilen",
     shared: "Link kopiert ✓",
     sharedloaded: "Geteilten Plan geöffnet",

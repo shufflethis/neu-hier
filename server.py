@@ -308,6 +308,28 @@ class Handler(BaseHTTPRequestHandler):
             self._send({"plz": plz, "categories": results})
             return
 
+        if path == "/favicon.svg":
+            svg = ('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
+                   '<circle cx="50" cy="62" r="30" fill="#f8c99c"/>'
+                   '<circle cx="39" cy="60" r="3.5" fill="#2b2b2b"/>'
+                   '<circle cx="61" cy="60" r="3.5" fill="#2b2b2b"/>'
+                   '<path d="M35 74 q8 -7 15 0 q8 -7 15 0 q-6 9 -15 5 q-9 4 -15 -5z" fill="#6b4a2f"/>'
+                   '<ellipse cx="50" cy="38" rx="34" ry="8" fill="#3f6b3a"/>'
+                   '<path d="M25 38 q4 -24 25 -24 q21 0 25 24 z" fill="#4d7f46"/>'
+                   '<rect x="25" y="32" width="50" height="7" rx="3.5" fill="#8a3033"/>'
+                   '<path d="M70 15 q13 -11 17 -3 q-8 1 -11 7 z" fill="#e8e3d4"/></svg>')
+            self._send(svg, "image/svg+xml")
+            return
+
+        if path == "/og-image.png":
+            fp = os.path.join(HERE, "og-image.png")
+            if os.path.exists(fp):
+                with open(fp, "rb") as f:
+                    self._send(f.read(), "image/png")
+            else:
+                self._send({"error": "not found"}, status=404)
+            return
+
         if path == "/api/jobs":
             plz = (q.get("plz") or [""])[0]
             what = (q.get("what") or [""])[0]

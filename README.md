@@ -1,61 +1,93 @@
 # move to germany, lol 📦➡️🏙️
 
-**WebMCP Challenge entry — live at [movetogermany.lol](https://movetogermany.lol).** Neue Adresse? Du und dein KI-Agent baut
-**gemeinsam** die Grundversorgung auf: Supermarkt, Zahnarzt, Friseur, Bank &
-80 weitere Branchen — echte deutschlandweite Daten (OpenStreetMap / Overture
-Maps), nach Entfernung sortiert, auf einer gemeinsam editierbaren Karte + Plan.
+**The collaborative arrival planner for you + your AI agent.** Because the
+paperwork is enough drama.
 
-## Warum WebMCP hier wirklich trägt
+**Live: [movetogermany.lol](https://movetogermany.lol)** · WebMCP Challenge entry
 
-Ein Umzug ist genau die Aufgabe, die weder Mensch noch Agent allein gut löst:
+[![Agent Readiness](https://webmcp-tool.com/badge/movetogermany.lol.svg)](https://webmcp-tool.com/b/movetogermany.lol)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 
-- Der **Agent** kann in Sekunden 12+ Branchen parallel durchsuchen und einen
-  Startplan bauen (`generate_starter_plan`) — für einen Menschen 30 Tabs.
-- Der **Mensch** kennt seine Präferenzen: er wirft Vorschläge raus, merkt
-  eigene Favoriten, schreibt Notizen an die Einträge.
-- Der Agent **liest den gemeinsamen Zustand zurück** (`get_shortlist` inkl.
-  handgeschriebener Notizen, markiert wer was angelegt hat) und arbeitet
-  darauf weiter: tauschen, ergänzen, als Markdown exportieren.
+![Demo: agent fills the plan, human edits and annotates](docs/demo.gif)
 
-Seiten-Zustand = geteilter Arbeitsbereich. Violette Einträge kommen vom
-Agenten, blaue vom Menschen — beide bearbeiten denselben Plan.
+## What it does
 
-## WebMCP-Tools (document.modelContext)
+Relocating to Germany means rebuilding your entire everyday infrastructure —
+supermarket, doctor, dentist, hairdresser, bank, a job, and the bureaucracy
+boss fight — in a place you don't know yet. Neither side solves this well
+alone: a human needs thirty browser tabs; an agent alone makes decisions
+about your life without you.
 
-| Tool | Art | Zweck |
-|---|---|---|
-| `list_categories` | read-only | 80+ Branchen-Slugs entdecken |
-| `set_home_plz` | write | Neue Wohn-PLZ setzen |
-| `find_nearby` | write (UI) | Eine Branche suchen + anzeigen |
-| `generate_starter_plan` | write | 12 Branchen parallel → nächstgelegener Anbieter je Branche in den Plan |
-| `add_to_shortlist` / `remove_from_shortlist` | write | Plan gemeinsam kuratieren |
-| `get_shortlist` | read-only (`untrustedContentHint`) | Plan inkl. Nutzer-Notizen lesen |
-| `set_note` | write | Notiz an Eintrag schreiben |
-| `export_plan` | read-only | Fertiges Markdown |
+This page is a **shared workspace** for both:
 
-Dazu ein **deklaratives WebMCP-Formular** (`toolname`/`tooldescription`/
-`toolautosubmit`/`toolparamdescription`) am PLZ-Feld.
+- One sentence to your agent — *"Set me up at 10115"* — and
+  `generate_starter_plan` searches the essential categories **in parallel**
+  across 80+ live German directories and fills the shared plan.
+- The human **vetoes, swaps and writes notes** right into the entries.
+- The agent **reads the notes back** (`get_shortlist`) and acts on them.
+- A live **activity feed** shows who did what (🤖 / 🧑).
+- The whole co-authored plan **serializes into a share link** — send it to
+  your partner and *their* agent continues where yours left off.
+- `find_jobs` searches real openings via the **official Federal Employment
+  Agency API**; `get_paperwork_checklist` hands over the official
+  bureaucracy steps (Anmeldung → tax ID → … → broadcasting fee).
 
-## Datenschicht
+## WebMCP implementation
 
-Das [„in meiner Nähe“-Netzwerk](https://friseur-in-meiner-naehe.de/llms.txt):
-80+ live agentenlesbare Branchenverzeichnisse (je Domain eigene JSON-API,
-MCP-Server, llms.txt; Agent-Readiness-Score 97/100 auf webmcp-tool.com).
-`network.json` ist der Katalog-Snapshot. Der Aggregator (`server.py`, reine
-Python-Stdlib) fragt die Branchen parallel ab — öffentlich über HTTPS (CORS
-offen, keine Keys) oder auf dem Netzwerk-VPS direkt über localhost.
+**12 imperative tools** via `document.modelContext.registerTool` — typed
+JSON schemas, per-property descriptions, explicit `required` lists,
+`readOnlyHint` on read paths, `untrustedContentHint` where tools return
+human-written notes:
 
-## Starten
+| Tool | Notes |
+|---|---|
+| `list_categories` | read-only; German + English labels for slug mapping |
+| `set_home_plz` | page state |
+| `find_nearby` | one category, renders live |
+| `generate_starter_plan` | 15 categories in parallel → closest per category into the plan |
+| `add_to_shortlist` / `remove_from_shortlist` | co-curation |
+| `get_shortlist` | read-only + `untrustedContentHint` (returns human notes) |
+| `set_note` | annotate entries |
+| `find_jobs` | official Bundesagentur für Arbeit data |
+| `get_paperwork_checklist` | official links only |
+| `export_plan` | **conditional** — registered only while the plan has entries |
+| `compare_candidates` | **conditional** — registered only while a category has 2+ results |
+
+The two conditional tools register/unregister with page state via
+`AbortController`, so the agent's tool list always mirrors what is actually
+possible — the lifecycle the spec intends. The postal-code form additionally
+carries the **declarative API** annotations (`toolname`, `tooldescription`,
+`toolautosubmit`, `toolparamdescription`).
+
+Tools and click handlers call the **same functions**: the page is one state
+machine with two front doors (mouse and model).
+
+## Data layer
+
+The ["in meiner Nähe" network](https://friseur-in-meiner-naehe.de/llms.txt):
+**80+ live, agent-readable German business directories** we operate —
+**1.16M real businesses** from OpenStreetMap + Overture Maps, distance-sorted
+per postal code, each directory with its own JSON API, MCP endpoint and
+llms.txt (independently scored 97/100 on webmcp-tool.com's Agent Readiness
+Check). `network.json` is the catalog snapshot; `server.py` (stdlib Python,
+**zero dependencies**) aggregates them in parallel and falls back to the
+public APIs automatically — so this repo runs anywhere.
+
+The app itself is agent-readable too: markdown content negotiation, JSON-LD,
+llms.txt, OpenAPI, `/.well-known/mcp.json`, an AI-crawler-welcoming
+robots.txt.
+
+## Run it
 
 ```bash
-python3 server.py           # http://127.0.0.1:8871 — nutzt die öffentlichen APIs
-NEUHIER_LOCAL=1 python3 server.py   # nur auf dem Netzwerk-VPS
+python3 server.py           # http://127.0.0.1:8871 — uses the public network APIs
 ```
 
-Keine Dependencies, kein Build. WebMCP testen: ChatGPT-In-App-Browser oder
-Chrome mit `chrome://flags/#enable-webmcp-testing`.
+No dependencies, no build. Test WebMCP in ChatGPT's in-app browser, or in
+Chrome via `chrome://flags/#enable-webmcp-testing`.
 
-## Lizenz
+## License
 
-MIT. Daten: OpenStreetMap (ODbL 1.0, © OpenStreetMap contributors) & Overture
-Maps Foundation (CDLA-Permissive-2.0).
+MIT. Data: OpenStreetMap (ODbL 1.0, © OpenStreetMap contributors) & Overture
+Maps Foundation (CDLA-Permissive-2.0). Job data: Bundesagentur für Arbeit
+(official public API).
