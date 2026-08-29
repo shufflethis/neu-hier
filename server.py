@@ -28,9 +28,12 @@ with open(os.path.join(HERE, "index.html"), encoding="utf-8") as f:
     INDEX_HTML = f.read()
 
 # Grundversorgungs-Set für den Ein-Klick-Starterplan
-ESSENTIALS = ["supermarkt", "baecker", "drogerie", "arztpraxis", "zahnarzt",
-              "bank", "tankstelle", "friseur", "optiker", "physiotherapie",
-              "restaurant", "cafe"]
+# Expat-getestet: erst wohnen (hotel/immobilienmakler/umzug/moebel), dann
+# Alltag (supermarkt..friseur), dann der deutsche Endgegner (steuerberater).
+ESSENTIALS = ["hotel", "immobilienmakler", "umzugsunternehmen", "moebelhaus",
+              "supermarkt", "baecker", "drogerie", "arztpraxis", "zahnarzt",
+              "bank", "friseur", "optiker", "restaurant", "cafe",
+              "steuerberater"]
 
 
 def vertical_search(slug, plz, limit=3, timeout=12):

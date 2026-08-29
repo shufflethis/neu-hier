@@ -50,6 +50,14 @@
   .tagline { color: var(--muted); max-width: 620px; margin: 0 auto; }
   .agentbar { display: inline-flex; gap: 8px; align-items: center; margin-top: 10px; font-size: .85rem;
               background: #f3eefe; color: var(--agent); border: 1px solid #e4d9fb; padding: 6px 12px; border-radius: 999px; }
+  .hero { display: flex; gap: 22px; align-items: center; margin-bottom: 18px;
+          background: linear-gradient(105deg, #fdf6e3 0%, #fff 55%); }
+  .hero svg { flex: 0 0 150px; height: auto; }
+  .hero h2 { margin: 0 0 8px; }
+  .hero ul { margin: 0; padding-left: 18px; columns: 2; column-gap: 26px; font-size: .92rem; }
+  .hero li { margin-bottom: 6px; break-inside: avoid; }
+  .hero .kicker { color: var(--accent2); font-weight: 700; font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; }
+  @media (max-width: 700px) { .hero { flex-direction: column; text-align: left; } .hero ul { columns: 1; } }
   .cols { display: grid; grid-template-columns: 1.4fr 1fr; gap: 18px; align-items: start; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
           padding: 18px; box-shadow: 0 1px 2px rgba(16,24,40,.05); }
@@ -105,6 +113,57 @@
     <p class="tagline" data-i18n="tagline"></p>
     <div class="agentbar" data-i18n="agentbar"></div>
   </div>
+
+  <section class="card hero">
+    <svg viewBox="0 0 220 240" role="img" aria-label="Mascot: smiling face with Bavarian hat and a foamy beer" xmlns="http://www.w3.org/2000/svg">
+      <!-- Kopf -->
+      <circle cx="100" cy="130" r="58" fill="#f8c99c"/>
+      <circle cx="78" cy="128" r="6" fill="#2b2b2b"/>
+      <circle cx="122" cy="128" r="6" fill="#2b2b2b"/>
+      <circle cx="68" cy="148" r="8" fill="#f2a37e" opacity=".6"/>
+      <circle cx="132" cy="148" r="8" fill="#f2a37e" opacity=".6"/>
+      <!-- Schnurrbart -->
+      <path d="M70 156 q15 -12 30 0 q15 -12 30 0 q-12 16 -30 8 q-18 8 -30 -8z" fill="#6b4a2f"/>
+      <!-- Mund -->
+      <path d="M86 174 q14 10 28 0" stroke="#2b2b2b" stroke-width="4" fill="none" stroke-linecap="round"/>
+      <!-- Tirolerhut -->
+      <ellipse cx="100" cy="86" rx="66" ry="14" fill="#3f6b3a"/>
+      <path d="M52 86 q8 -46 48 -46 q40 0 48 46 z" fill="#4d7f46"/>
+      <rect x="52" y="74" width="96" height="12" rx="6" fill="#8a3033"/>
+      <!-- Feder -->
+      <path d="M140 42 q26 -22 34 -6 q-16 2 -22 14 z" fill="#e8e3d4" stroke="#b8b2a0" stroke-width="2"/>
+      <!-- Bierkrug -->
+      <g transform="translate(150 138)">
+        <rect x="0" y="14" width="44" height="62" rx="7" fill="#f5b31c" stroke="#c8880e" stroke-width="3"/>
+        <rect x="6" y="24" width="6" height="44" rx="3" fill="#ffd45e"/>
+        <rect x="16" y="24" width="6" height="44" rx="3" fill="#ffd45e"/>
+        <path d="M44 26 h10 a10 10 0 0 1 10 10 v18 a10 10 0 0 1 -10 10 h-10 v-9 h8 a3 3 0 0 0 3 -3 v-14 a3 3 0 0 0 -3 -3 h-8 z" fill="#c8880e"/>
+        <!-- Schaum -->
+        <circle cx="8" cy="12" r="10" fill="#fff"/>
+        <circle cx="22" cy="6" r="12" fill="#fff"/>
+        <circle cx="36" cy="12" r="10" fill="#fff"/>
+        <circle cx="30" cy="-2" r="7" fill="#fff"/>
+      </g>
+      <!-- Brezel -->
+      <g transform="translate(18 176) scale(.9)">
+        <path d="M20 30 q-16 -26 6 -28 q14 -1 12 14 q-2 12 -14 24 q-8 8 2 10 q8 2 12 -6 M28 2 q22 2 6 28 q-8 12 4 22 q10 6 12 -4" fill="none" stroke="#9a6231" stroke-width="7" stroke-linecap="round"/>
+      </g>
+    </svg>
+    <div>
+      <div class="kicker" data-i18n="whykicker">Why Germany? — the honest edition</div>
+      <h2 data-i18n="why">Immigrants welcome. Seriously. Here's the deal:</h2>
+      <ul>
+        <li data-i18n="why1"></li>
+        <li data-i18n="why2"></li>
+        <li data-i18n="why3"></li>
+        <li data-i18n="why4"></li>
+        <li data-i18n="why5"></li>
+        <li data-i18n="why6"></li>
+        <li data-i18n="why7"></li>
+        <li data-i18n="why8"></li>
+      </ul>
+    </div>
+  </section>
 
   <div class="cols">
     <section class="card">
@@ -194,6 +253,16 @@ const I18N = {
     planheader: "# My arrival plan (movetogermany.lol)",
     plannote: "Note",
     planfooter: "_Built with movetogermany.lol on top of the „in meiner Nähe“ network (OpenStreetMap/Overture)._",
+    whykicker: "Why Germany? — the honest edition",
+    why: "Immigrants welcome. Seriously. Here's the deal:",
+    why1: "High taxes, no speed limit on the Autobahn. Priorities.",
+    why2: "Every job ad comes in three genders — (m/f/d). Bureaucracy thinks of everyone.",
+    why3: "35-hour weeks and sacred Feierabend. Low working hours are a feature, not a bug.",
+    why4: "Currywurst-and-beer tradition meets 3,000 kinds of bread. Beer is legally food here.",
+    why5: "Learn to reserve a sunbed with your towel at 6 am. It's basically a sport.",
+    why6: "Sundays are silent. Legally. Buy your groceries on Saturday or perish.",
+    why7: "Cash only, sorry — the fax machine is still warming up.",
+    why8: "Lost two world wars, working overtime to help avoid the third. You're welcome here.",
     how: "How it works",
     how1: "Moving to Germany means rebuilding your entire everyday infrastructure — supermarket, doctor, dentist, hairdresser, bank — in a place you don't know yet. Doing that alone means thirty browser tabs; letting an agent do it alone means decisions about your life made without you.",
     how2: "This page is built for both of you: your AI agent operates it through WebMCP tools (search 80+ categories in parallel, fill the plan, read your notes back), while you see everything it does live on the page — and curate, veto and annotate with your own hands. The plan belongs to both of you.",
@@ -227,6 +296,16 @@ const I18N = {
     planheader: "# Mein Ankommens-Plan",
     plannote: "Notiz",
     planfooter: "_Erstellt mit movetogermany.lol über das „in meiner Nähe“-Netzwerk (OpenStreetMap/Overture)._",
+    whykicker: "Warum Deutschland? — die ehrliche Version",
+    why: "Immigrants welcome. Ernsthaft. Der Deal:",
+    why1: "Hohe Steuern, aber kein Tempolimit auf der Autobahn. Prioritäten.",
+    why2: "Jede Stellenanzeige kommt in drei Geschlechtern — (m/w/d). Die Bürokratie denkt an alle.",
+    why3: "35-Stunden-Woche und heiliger Feierabend. Wenig Arbeitsstunden sind Absicht.",
+    why4: "Currywurst-und-Bier-Tradition trifft 3.000 Brotsorten. Bier ist hier rechtlich Grundnahrungsmittel.",
+    why5: "Lern, um 6 Uhr die Sonnenliege mit dem Handtuch zu reservieren. Quasi Leistungssport.",
+    why6: "Sonntags ist Ruhe. Gesetzlich. Kauf samstags ein oder verhungere stilvoll.",
+    why7: "Nur Bargeld, sorry — das Faxgerät wärmt noch auf.",
+    why8: "Zwei Weltkriege verloren, seitdem Überstunden gegen den dritten. Du bist willkommen.",
     how: "So funktioniert's",
     how1: "Ein Umzug heißt: die komplette Alltags-Infrastruktur neu aufbauen — Supermarkt, Arzt, Zahnarzt, Friseur, Bank — an einem Ort, den du noch nicht kennst. Allein bedeutet das dreißig Browser-Tabs; es dem Agenten allein zu überlassen heißt, dass über deinen Alltag ohne dich entschieden wird.",
     how2: "Diese Seite ist für euch beide gebaut: Dein KI-Agent bedient sie über WebMCP-Tools (80+ Branchen parallel durchsuchen, den Plan füllen, deine Notizen zurücklesen), während du alles live auf der Seite siehst — und selbst kuratierst, vetost und kommentierst. Der Plan gehört euch gemeinsam.",
