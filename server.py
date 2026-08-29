@@ -687,6 +687,12 @@ class Handler(BaseHTTPRequestHandler):
                 "version": "1.0.0",
                 "websiteUrl": f"https://{DOMAIN}/developers",
                 "remotes": [{"type": "streamable-http", "url": f"https://{DOMAIN}/mcp"}],
+                # Icons sind (noch) nicht Teil des Registry-Schemas — als
+                # Web-Manifest-artige Zusatzinfo fuer Clients, die sie lesen.
+                "icons": [
+                    {"src": f"https://{DOMAIN}/icon-192.png", "sizes": "192x192", "type": "image/png"},
+                    {"src": f"https://{DOMAIN}/icon-512.png", "sizes": "512x512", "type": "image/png"},
+                ],
             }, "application/json; charset=utf-8")
             return
 
@@ -800,6 +806,35 @@ class Handler(BaseHTTPRequestHandler):
                     self._send(f.read(), "image/png")
             else:
                 self._send({"error": "not found"}, status=404)
+            return
+
+        if path in ("/icon-512.png", "/icon-192.png", "/icon-180.png", "/icon-32.png",
+                    "/apple-touch-icon.png", "/favicon.ico"):
+            name = {"/apple-touch-icon.png": "icon-180.png",
+                    "/favicon.ico": "icon-32.png"}.get(path, path.lstrip("/"))
+            fp = os.path.join(HERE, name)
+            if os.path.exists(fp):
+                with open(fp, "rb") as f:
+                    self._send(f.read(), "image/png")
+            else:
+                self._send({"error": "not found"}, status=404)
+            return
+
+        if path == "/site.webmanifest":
+            self._send({
+                "name": "move to germany, lol",
+                "short_name": "movetogermany",
+                "description": "The arrival planner for you + your AI agent.",
+                "start_url": "/",
+                "display": "browser",
+                "background_color": "#f6f7f9",
+                "theme_color": "#0e7490",
+                "icons": [
+                    {"src": "/icon-192.png", "sizes": "192x192", "type": "image/png"},
+                    {"src": "/icon-512.png", "sizes": "512x512", "type": "image/png"},
+                    {"src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml"},
+                ],
+            }, "application/manifest+json; charset=utf-8")
             return
 
         if path == "/api/jobs":
