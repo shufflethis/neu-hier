@@ -1,2 +1,4 @@
+.data/
+.stats-key
 __pycache__/
 *.pyc

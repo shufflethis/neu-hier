@@ -996,13 +996,41 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
   ];
   window.__mc = mc;
   const A = (text) => addActivity("agent", text);
-  /* Jede Tool-Ausführung als privacy-freundliches Event (nur Tool-NAME, keine Argumente). */
+  /* Jede Tool-Ausführung als privacy-freundliches Event: Plausible (nur Tool-Name)
+     + webmcp-analytics-Beacon (github.com/shufflethis/webmcp-analytics —
+     Event-Kontrakt aus docs/INTEGRATION.md, hier ohne Bundler von Hand
+     implementiert; nie Argument-WERTE, nur Shapes wie "plz:string:5"). */
+  const waSend = (events) => {
+    try {
+      const body = JSON.stringify(events);
+      if (navigator.sendBeacon) navigator.sendBeacon("/api/webmcp-events", body);
+      else fetch("/api/webmcp-events", { method: "POST", body, keepalive: true,
+        headers: { "Content-Type": "application/json" } });
+    } catch (e) {}
+  };
+  const waShapes = (args) => {
+    if (!args || typeof args !== "object") return [];
+    return Object.entries(args).slice(0, 24).map(([k, v]) =>
+      k + ":" + (typeof v) + (typeof v === "string" ? ":" + v.length
+        : Array.isArray(v) ? ":" + v.length : ""));
+  };
   const _register = mc.registerTool.bind(mc);
   const mcReg = (desc, opts) => {
+    waSend([{ kind: "register", tool: desc.name }]);
     const ex = desc.execute;
     desc.execute = async function (...args) {
       try { if (window.plausible) plausible("webmcp_tool", { props: { tool: desc.name } }); } catch (e) {}
-      return ex.apply(this, args);
+      const t0 = Date.now();
+      try {
+        const result = await ex.apply(this, args);
+        waSend([{ kind: "call", tool: desc.name, ms: Date.now() - t0, ok: true,
+                  args: waShapes(args[0]) }]);
+        return result;
+      } catch (e) {
+        waSend([{ kind: "call", tool: desc.name, ms: Date.now() - t0, ok: false,
+                  err: String(e).slice(0, 160), args: waShapes(args[0]) }]);
+        throw e;
+      }
     };
     return _register(desc, opts);
   };

@@ -257,6 +257,14 @@ find_bookable returns online-bookable providers normalized across platforms
 Today: lookup + deep link — the booking completes on the provider's
 platform. Availability/slot APIs are the roadmap, not the promise.
 
+## Agent tool use (privacy note)
+
+When an AI agent calls one of the tools on this site we record the tool
+name, how long it took, whether it succeeded, and the names and types of
+the parameters — **never their contents**. No cookies, no IP addresses, no
+durable identifiers, and nothing is sent to any third party. Retention: 30
+days.
+
 ## Terms
 
 Free, keyless, read-only. Rate-limit headers on every response. Please send
@@ -347,6 +355,131 @@ def index_markdown():
         "(OpenStreetMap ODbL 1.0, Overture Maps CDLA-Permissive-2.0). Open source (MIT):\n"
         "https://github.com/shufflethis/neu-hier\n"
     )
+
+
+# ---------------------------------------------------------------------------
+# webmcp-analytics (github.com/shufflethis/webmcp-analytics, Path C):
+# Erst-Partei-Telemetrie für WebMCP-Tool-Calls. Regeln aus docs/INTEGRATION.md:
+# Empfänger-Timestamp, surface immer "browser", Origin-Allowlist, Body-Cap vor
+# dem Parsen, immer 204, nie Argument-WERTE (nur Shapes).
+EVENT_DIR = os.environ.get("EVENT_DIR", os.path.join(HERE, ".data", "webmcp-events"))
+ALLOWED_ORIGINS = {"https://movetogermany.lol", "https://www.movetogermany.lol"}
+WA_MAX_BODY, WA_MAX_EVENTS = 8 * 1024, 10
+WA_CAPS = {"tool": 128, "err": 160, "arg_keys": 24, "arg_key": 64,
+           "caller_keys": 16, "caller_value": 200, "session": 64}
+
+# Eine Quelle für die Frage "welche Tools existieren?" — Basis für neverCalled.
+# Muss bei jedem neuen registerTool in index.html mitgepflegt werden!
+PAGE_TOOLS = ["list_categories", "get_profile", "set_profile", "set_home_plz",
+              "find_nearby", "generate_starter_plan", "add_to_shortlist",
+              "remove_from_shortlist", "get_shortlist", "set_note",
+              "propose_appointment", "draft_outreach", "find_bookable",
+              "find_jobs", "get_paperwork_checklist",
+              "export_plan", "compare_candidates"]
+
+try:
+    with open(os.path.join(HERE, ".stats-key")) as _f:
+        WA_STATS_KEY = _f.read().strip()
+except Exception:
+    WA_STATS_KEY = None
+
+
+def wa_sanitize_event(raw, now_ms):
+    """The security boundary. Everything reaching this is attacker-controlled."""
+    if not isinstance(raw, dict):
+        return None
+    kind = raw.get("kind")
+    if kind not in ("register", "call"):
+        return None
+    tool = raw.get("tool")
+    if not isinstance(tool, str) or not tool.strip():
+        return None
+    event = {
+        "t": now_ms,          # vom Empfänger, nie vom Sender
+        "kind": kind,
+        "surface": "browser",  # erzwungen — wichtigste Zeile der Datei
+        "tool": tool.strip()[:WA_CAPS["tool"]],
+    }
+    ms = raw.get("ms")
+    if isinstance(ms, (int, float)):
+        event["ms"] = max(0, min(int(ms), 600_000))
+    if isinstance(raw.get("ok"), bool):
+        event["ok"] = raw["ok"]
+    if isinstance(raw.get("err"), str) and raw["err"]:
+        event["err"] = raw["err"][:WA_CAPS["err"]]
+    if isinstance(raw.get("session"), str) and raw["session"]:
+        event["session"] = raw["session"][:WA_CAPS["session"]]
+    if isinstance(raw.get("args"), list):
+        event["args"] = [a[:WA_CAPS["arg_key"]] for a in raw["args"][:WA_CAPS["arg_keys"]]
+                         if isinstance(a, str)]
+    if isinstance(raw.get("caller"), dict):
+        cleaned = {str(k)[:WA_CAPS["arg_key"]]: v[:WA_CAPS["caller_value"]]
+                   for k, v in list(raw["caller"].items())[:WA_CAPS["caller_keys"]]
+                   if isinstance(v, str) and v}
+        if cleaned:
+            event["caller"] = cleaned
+    return event
+
+
+def wa_append_event(event):
+    """One append-only file per day. Never raises."""
+    try:
+        os.makedirs(EVENT_DIR, exist_ok=True)
+        from datetime import datetime, timezone
+        day = datetime.fromtimestamp(event["t"] / 1000, timezone.utc).strftime("%Y-%m-%d")
+        with open(os.path.join(EVENT_DIR, f"{day}.jsonl"), "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(event, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+
+def wa_prune(retention_days=30):
+    """30 Tage sind ein Versprechen, keine Absicht."""
+    try:
+        import time as _time
+        cutoff = _time.time() - retention_days * 86400
+        for name in os.listdir(EVENT_DIR):
+            fp = os.path.join(EVENT_DIR, name)
+            if name.endswith(".jsonl") and os.path.getmtime(fp) < cutoff:
+                os.remove(fp)
+    except Exception:
+        pass
+
+
+def wa_summarize():
+    """Kennzahlen je Tool + neverCalled (das eine, das der Log nicht kennt)."""
+    tools = {}
+    registers = 0
+    try:
+        for name in sorted(os.listdir(EVENT_DIR)):
+            if not name.endswith(".jsonl"):
+                continue
+            with open(os.path.join(EVENT_DIR, name), encoding="utf-8") as fh:
+                for line in fh:
+                    try:
+                        e = json.loads(line)
+                    except Exception:
+                        continue
+                    if e.get("kind") == "register":
+                        registers += 1
+                        continue
+                    tl = tools.setdefault(e.get("tool"), {"calls": 0, "ok": 0, "err": 0, "ms": []})
+                    tl["calls"] += 1
+                    if e.get("ok") is True:
+                        tl["ok"] += 1
+                    if e.get("ok") is False or e.get("err"):
+                        tl["err"] += 1
+                    if "ms" in e:
+                        tl["ms"].append(e["ms"])
+    except FileNotFoundError:
+        pass
+    out = {}
+    for tname, tl in sorted(tools.items(), key=lambda x: -x[1]["calls"]):
+        out[tname] = {"calls": tl["calls"], "ok": tl["ok"], "err": tl["err"],
+                      "avg_ms": round(sum(tl["ms"]) / len(tl["ms"])) if tl["ms"] else None}
+    return {"registered": PAGE_TOOLS, "register_events": registers,
+            "tools": out,
+            "neverCalled": [t for t in PAGE_TOOLS if t not in tools]}
 
 
 def track_event(name, path, user_agent="", props=None):
@@ -605,6 +738,27 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         """Backend-MCP (Streamable HTTP, JSON-RPC): initialize / tools/list / tools/call."""
         parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == "/api/webmcp-events":
+            # Antwortet 204, was auch immer passiert (Beacon-Semantik).
+            try:
+                origin = self.headers.get("Origin")
+                n = int(self.headers.get("content-length") or 0)
+                body = self.rfile.read(min(n, WA_MAX_BODY + 1)) if n else b""
+                if origin in ALLOWED_ORIGINS and len(body) <= WA_MAX_BODY:
+                    parsed_body = json.loads(body)
+                    items = parsed_body if isinstance(parsed_body, list) else [parsed_body]
+                    import time as _time
+                    now_ms = int(_time.time() * 1000)
+                    for item in items[:WA_MAX_EVENTS]:
+                        ev = wa_sanitize_event(item, now_ms)
+                        if ev:
+                            wa_append_event(ev)
+            except Exception:
+                pass
+            self.send_response(204)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
         if parsed.path != "/mcp":
             self._send({"error": "not found"}, status=404)
             return
@@ -701,7 +855,7 @@ class Handler(BaseHTTPRequestHandler):
             body = "# Explicitly welcomed AI agents/crawlers (deliberate choice)\n"
             for a in agents:
                 body += f"User-agent: {a}\nAllow: /\n\n"
-            body += ("User-agent: *\nAllow: /\n"
+            body += ("User-agent: *\nAllow: /\nDisallow: /api/webmcp-stats\n"
                      "Content-Signal: search=yes, ai-input=yes, ai-train=yes\n\n"
                      f"Sitemap: https://{DOMAIN}/sitemap.xml\n")
             self._send(body, "text/plain; charset=utf-8")
@@ -905,6 +1059,14 @@ class Handler(BaseHTTPRequestHandler):
             self._send(PAPERWORK)
             return
 
+        if path == "/api/webmcp-stats":
+            key = (q.get("key") or [""])[0]
+            if not WA_STATS_KEY or key != WA_STATS_KEY:
+                self._send({"error": "not found"}, status=404)
+                return
+            self._send(wa_summarize())
+            return
+
         if path == "/llms.txt":
             body = (
                 "# move to germany, lol — collaborative arrival planner\n\n"
@@ -946,6 +1108,7 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    wa_prune()
     print(f"neu-hier auf 127.0.0.1:{PORT} — {'lokale Ports' if USE_LOCAL else 'öffentliche APIs'}, "
           f"{len(NETWORK)} Vertikalen")
     ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
