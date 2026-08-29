@@ -264,17 +264,27 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/llms.txt":
             body = (
-                "# move to germany, lol — arrival planner (human + agent)\n\n"
-                "> movetogermany.lol: Kollaborativer Umzugs-Planer über dem deutschlandweiten "
-                "'in meiner Nähe'-Verzeichnisnetzwerk (80+ Branchen, OpenStreetMap/Overture-Daten). "
-                "Mensch und KI-Agent bauen gemeinsam die Grundversorgung für eine neue Adresse auf.\n\n"
-                "## WebMCP\n"
-                "Die Seite registriert Tools via document.modelContext (Suche, Shortlist, "
-                "Starterplan, Export) — Agent und Mensch teilen sich denselben Seiten-Zustand.\n\n"
+                "# move to germany, lol — collaborative arrival planner\n\n"
+                "> Human and AI agent build the everyday essentials for a new German address "
+                "together: the agent searches 80+ business categories in parallel via WebMCP "
+                "tools, the human curates the shared shortlist and writes notes, the agent "
+                "reads them back. Data: the 'in meiner Naehe' network (OpenStreetMap/Overture).\n\n"
+                "## Core pages\n"
+                f"- [App](https://{DOMAIN}/): the collaborative planner (WebMCP tools register on load)\n"
+                f"- [Markdown version](https://{DOMAIN}/index.md): this page as plain Markdown\n"
+                f"- [OpenAPI schema](https://{DOMAIN}/openapi.json): full HTTP API contract\n"
+                f"- [Auth notes](https://{DOMAIN}/auth.md): keyless, read-only, rate-limit headers\n\n"
                 "## API\n"
-                "- /api/categories: alle Branchen des Netzwerks\n"
-                "- /api/search?cat=<slug>&plz=<plz>&limit=5: eine Branche\n"
-                "- /api/essentials?plz=<plz>: Grundversorgung parallel über viele Branchen\n"
+                f"- [All categories](https://{DOMAIN}/api/categories): the 80+ categories of the network\n"
+                f"- [Search one category](https://{DOMAIN}/api/search?cat=supermarkt&plz=10115&limit=5): distance-sorted providers\n"
+                f"- [Essentials in parallel](https://{DOMAIN}/api/essentials?plz=10115): many categories at once\n\n"
+                "## WebMCP tools on the page\n"
+                "list_categories, set_home_plz, find_nearby, generate_starter_plan, add_to_shortlist, "
+                "remove_from_shortlist, get_shortlist, set_note, export_plan — registered via "
+                "document.modelContext with typed JSON schemas and honest annotations.\n\n"
+                "## Source\n"
+                "- [GitHub (MIT)](https://github.com/shufflethis/neu-hier): full source, zero dependencies\n"
+                "- [Network example](https://friseur-in-meiner-naehe.de/llms.txt): one of the 80+ underlying directories\n"
             )
             self._send(body, "text/markdown; charset=utf-8")
             return
