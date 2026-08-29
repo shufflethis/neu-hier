@@ -31,10 +31,20 @@ This page is a **shared workspace** for both:
 - `find_jobs` searches real openings via the **official Federal Employment
   Agency API**; `get_paperwork_checklist` hands over the official
   bureaucracy steps (Anmeldung → tax ID → … → broadcasting fee).
+- Every plan entry carries **real actions**: call, website, route
+  (Google Maps), online booking where the directory knows one, and a
+  drafted first-contact message (`draft_outreach`) that folds the human's
+  handwritten note into the text.
+- A citable, human-grade **[arrival guide](https://movetogermany.lol/guide)**
+  (week-by-week checklist, official links only) — also served as Markdown
+  via content negotiation.
+- **Discovery is solved structurally**: all 80+ directories of the network
+  link here from their footers and llms.txt files, so both crawlers and
+  agents reading any network domain find the planner.
 
 ## WebMCP implementation
 
-**12 imperative tools** via `document.modelContext.registerTool` — typed
+**13 imperative tools** via `document.modelContext.registerTool` — typed
 JSON schemas, per-property descriptions, explicit `required` lists,
 `readOnlyHint` on read paths, `untrustedContentHint` where tools return
 human-written notes:
@@ -48,6 +58,7 @@ human-written notes:
 | `add_to_shortlist` / `remove_from_shortlist` | co-curation |
 | `get_shortlist` | read-only + `untrustedContentHint` (returns human notes) |
 | `set_note` | annotate entries |
+| `draft_outreach` | ready-to-send first-contact message per entry, uses the human's note |
 | `find_jobs` | official Bundesagentur für Arbeit data |
 | `get_paperwork_checklist` | official links only |
 | `export_plan` | **conditional** — registered only while the plan has entries |

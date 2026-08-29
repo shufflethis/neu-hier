@@ -83,8 +83,9 @@ def vertical_search(slug, plz, limit=3, timeout=12):
         for rec in data.get("records", []):
             recs.append({k: rec.get(k) for k in (
                 "name", "city", "street", "housenumber", "postcode",
-                "lat", "lon", "phone", "website", "distance_km",
-                "gmaps_rating", "gmaps_reviews", "opening_hours")})
+                "lat", "lon", "phone", "email", "website", "distance_km",
+                "review_rating", "review_count", "opening_hours",
+                "booking_capable", "booking_platform", "booking_url")})
         return {"slug": slug, "label": v["label"], "emoji": v["emoji"],
                 "domain": v["domain"], "records": recs}
     except Exception as exc:  # Vertikale nicht erreichbar -> weich degradieren
@@ -121,6 +122,141 @@ def wants_markdown(accept):
     if q_html is None:
         q_html = _accept_quality(accept, "text/*") or _accept_quality(accept, "*/*") or 0.0
     return q_md > 0 and q_md >= q_html
+
+
+GUIDE_MD = """# Moving to Germany: the complete arrival checklist (2026)
+
+A practical, week-by-week checklist for relocating to Germany — what to do
+before you land, in your first 14 days, and in your first two months. No
+affiliate links; every link below goes to an official source.
+
+## Before you land (4–2 weeks out)
+
+- **Passport & visa**: non-EU citizens need the right residence purpose
+  (work, study, family). Blue Card thresholds change yearly — check the
+  official migration portal: https://www.make-it-in-germany.com/en/
+- **Book temporary housing** for 4–8 weeks. You cannot rent most long-term
+  flats without a German bank account and often not without an Anmeldung —
+  plan for the overlap.
+- **Scan your documents**: passport, birth certificate, marriage
+  certificate, degree certificates, vaccination record. Germany loves paper.
+- **Get a job first if you can**: most people move *for* a job. The federal
+  job database is public: https://www.arbeitsagentur.de/jobsuche/
+
+## Days 1–14 (the critical window)
+
+1. **Anmeldung (address registration)** — the key that unlocks everything
+   else. Register at the local Buergeramt within 14 days of moving in.
+   Appointments are scarce in big cities: book the moment you know your
+   address. https://www.bmi.bund.de/EN/topics/administrative-reform/register/register-node.html
+2. **Steuer-ID (tax ID)** — arrives by post automatically ~2 weeks after
+   Anmeldung. Your employer needs it; without it you pay maximum tax until
+   corrected. https://www.bzst.de/EN/Private_individuals/Tax_identification_number/tax_identification_number_node.html
+3. **Health insurance** — legally mandatory from day one of employment.
+   Choose a public insurer (gesetzliche Krankenkasse); ~14.6% of gross
+   salary plus surcharge, split with your employer.
+   https://www.krankenkassen.de/gesetzliche-krankenkassen/krankenkassen-liste/
+4. **Bank account** — needed for salary and rent. Bring passport +
+   Anmeldung certificate. Every resident is entitled to a basic account
+   (Basiskonto). https://www.bafin.de/EN/Verbraucher/Bank/Produkte/Basiskonto/basiskonto_node_en.html
+5. **SIM/phone contract** — prepaid activates with passport; postpaid
+   contracts usually want the Anmeldung and a German bank account.
+
+## Weeks 3–8 (settling in)
+
+- **Kindergeld (child benefit)** — about 255 EUR per child per month,
+  via the Familienkasse: https://www.arbeitsagentur.de/en/family-and-children
+- **Buergergeld** — if you're job hunting and eligible, apply at your local
+  Jobcenter: https://www.jobcenter.digital/
+- **Rundfunkbeitrag (broadcasting fee)** — 18.36 EUR/month per household.
+  It will find you after Anmeldung; register once, avoid the back-payment.
+  https://www.rundfunkbeitrag.de/
+- **Liability insurance (Haftpflicht)** — not mandatory but socially
+  expected; landlords often ask for it. A few euros a month.
+- **Build your everyday map** — GP (Hausarzt), dentist, supermarket,
+  hairdresser, pharmacy-level essentials. This is exactly what
+  https://movetogermany.lol does: you and your AI agent build the shortlist
+  together from 1.16M real businesses, sorted by distance from your
+  postal code.
+
+## The unwritten rules (learn these early)
+
+- **Sundays are silent.** Shops close, drills stay off. Buy groceries on
+  Saturday.
+- **Cash still matters.** Many bakeries and restaurants are card-free;
+  keep 50 EUR on you.
+- **Punctuality is politeness.** "Quarter past" means 15 minutes past, not
+  "whenever".
+- **Recycling is a lifestyle.** Glass by color, Pfand bottles back to the
+  store, paper separate. Your neighbors are watching. Lovingly.
+
+---
+
+*Maintained by [movetogermany.lol](https://movetogermany.lol/) — the arrival
+planner you and your AI agent operate together (WebMCP inside). Machine
+readers: this page is also available at /guide.md, and the interactive
+planner exposes typed tools — see /llms.txt.*
+"""
+
+
+def guide_html():
+    """Der Guide als gestylte HTML-Seite (Markdown-Zwilling: GUIDE_MD)."""
+    import html as _h
+    import re as _re
+    body = []
+    for block in GUIDE_MD.split("\n\n"):
+        b = block.strip()
+        if not b:
+            continue
+        if b.startswith("# "):
+            body.append(f"<h1>{_h.escape(b[2:])}</h1>")
+        elif b.startswith("## "):
+            body.append(f"<h2>{_h.escape(b[3:])}</h2>")
+        elif b == "---":
+            body.append("<hr>")
+        else:
+            lines = b.split("\n")
+            if all(l.lstrip().startswith(("- ", "* ")) or l[:3].rstrip(". ").isdigit() or l.startswith("  ") for l in lines):
+                items, cur = [], None
+                for l in lines:
+                    if l.lstrip().startswith(("- ", "* ")) or (l.strip() and l.strip()[0].isdigit() and ". " in l[:4]):
+                        if cur is not None:
+                            items.append(cur)
+                        cur = _re.sub(r"^\s*(?:[-*]|\d+\.)\s*", "", l)
+                    else:
+                        cur = (cur or "") + " " + l.strip()
+                if cur:
+                    items.append(cur)
+                tag = "ol" if lines[0].strip()[0].isdigit() else "ul"
+                body.append(f"<{tag}>" + "".join(f"<li>{md_inline(i)}</li>" for i in items) + f"</{tag}>")
+            else:
+                body.append(f"<p>{md_inline(' '.join(lines))}</p>")
+    return ('<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">'
+            '<meta name="viewport" content="width=device-width, initial-scale=1">'
+            '<title>Moving to Germany: the complete arrival checklist</title>'
+            '<meta name="description" content="Week-by-week relocation checklist for Germany: Anmeldung, tax ID, health insurance, bank account, Kindergeld — official links only.">'
+            f'<link rel="canonical" href="https://{DOMAIN}/guide">'
+            '<link rel="alternate" type="text/markdown" href="/guide.md">'
+            '<link rel="icon" href="/favicon.svg" type="image/svg+xml">'
+            '<style>body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;'
+            'background:#f6f7f9;color:#1a1d21;line-height:1.65}'
+            '.wrap{max-width:720px;margin:0 auto;padding:40px 20px 64px}'
+            'h1{font-size:1.7rem;letter-spacing:-.02em}h2{font-size:1.2rem;margin-top:30px}'
+            'a{color:#0e7490;text-decoration:none}a:hover{text-decoration:underline}'
+            'li{margin-bottom:8px}hr{border:0;border-top:1px solid #e3e6ea;margin:28px 0}'
+            'p.back a{font-weight:600}</style></head><body><div class="wrap"><main>'
+            '<p class="back"><a href="/">← movetogermany.lol</a></p>'
+            + "".join(body) + "</main></div></body></html>")
+
+
+def md_inline(s):
+    import html as _h
+    import re as _re
+    s = _h.escape(s)
+    s = _re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", s)
+    s = _re.sub(r"\[(.+?)\]\((.+?)\)", r'<a href="\2">\1</a>', s)
+    s = _re.sub(r"(?<![\"=\w])(https://[^\s<]+)", r'<a href="\1">\1</a>', s)
+    return s
 
 
 def index_markdown():
@@ -183,6 +319,17 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(INDEX_HTML, "text/html; charset=utf-8")
             return
 
+        if path == "/guide":
+            if wants_markdown(self.headers.get("Accept", "")):
+                self._send(GUIDE_MD, "text/markdown; charset=utf-8")
+            else:
+                self._send(guide_html(), "text/html; charset=utf-8")
+            return
+
+        if path == "/guide.md":
+            self._send(GUIDE_MD, "text/markdown; charset=utf-8")
+            return
+
         if path == "/index.md":
             self._send(index_markdown(), "text/markdown; charset=utf-8")
             return
@@ -205,7 +352,7 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/sitemap.xml":
             import datetime as _dt
             today = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d")
-            urls = ["/", "/llms.txt", "/index.md", "/auth.md", "/openapi.json"]
+            urls = ["/", "/guide", "/llms.txt", "/index.md", "/auth.md", "/openapi.json"]
             body = ('<?xml version="1.0" encoding="UTF-8"?>\n'
                     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n')
             for u in urls:
@@ -392,6 +539,7 @@ class Handler(BaseHTTPRequestHandler):
                 "reads them back. Data: the 'in meiner Naehe' network (OpenStreetMap/Overture).\n\n"
                 "## Core pages\n"
                 f"- [App](https://{DOMAIN}/): the collaborative planner (WebMCP tools register on load)\n"
+                f"- [Arrival guide](https://{DOMAIN}/guide): week-by-week relocation checklist for Germany, official links only\n"
                 f"- [Markdown version](https://{DOMAIN}/index.md): this page as plain Markdown\n"
                 f"- [OpenAPI schema](https://{DOMAIN}/openapi.json): full HTTP API contract\n"
                 f"- [Auth notes](https://{DOMAIN}/auth.md): keyless, read-only, rate-limit headers\n\n"

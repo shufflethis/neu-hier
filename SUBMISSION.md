@@ -60,10 +60,11 @@ not exist without WebMCP.
 
 ## How we implemented WebMCP
 
-- **12 imperative tools** via `document.modelContext.registerTool`:
+- **13 imperative tools** via `document.modelContext.registerTool`:
   `list_categories`, `set_home_plz`, `find_nearby`, `generate_starter_plan`,
   `add_to_shortlist`, `remove_from_shortlist`, `get_shortlist`, `set_note`,
-  `find_jobs`, `get_paperwork_checklist`, plus two **conditional tools**
+  `draft_outreach`, `find_jobs`, `get_paperwork_checklist`, plus two
+  **conditional tools**
   (`export_plan`, `compare_candidates`) that register and unregister with
   page state via `AbortController` — the agent's tool list always mirrors
   what is actually possible right now, exactly the lifecycle the spec
