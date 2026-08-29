@@ -184,6 +184,7 @@
       <p class="hint" id="plz-error" hidden data-i18n="plzerr"></p>
       <div class="chips" id="chips" aria-label="Categories"></div>
       <div id="map" role="img" aria-label="Map of found providers"></div>
+      <div id="jobs" class="catblock flash" hidden></div>
       <h2 data-i18n="found">Found</h2>
       <div id="results" aria-live="polite"></div>
     </section>
@@ -263,6 +264,9 @@ const I18N = {
     why6: "Sundays are silent. Legally. Buy your groceries on Saturday or perish.",
     why7: "Cash only, sorry — the fax machine is still warming up.",
     why8: "Lost two world wars, working overtime to help avoid the third. You're welcome here.",
+    jobshead: "Jobs near your new home",
+    jobstotal: "openings in the official database",
+    jobsapply: "View ↗",
     how: "How it works",
     how1: "Moving to Germany means rebuilding your entire everyday infrastructure — supermarket, doctor, dentist, hairdresser, bank — in a place you don't know yet. Doing that alone means thirty browser tabs; letting an agent do it alone means decisions about your life made without you.",
     how2: "This page is built for both of you: your AI agent operates it through WebMCP tools (search 80+ categories in parallel, fill the plan, read your notes back), while you see everything it does live on the page — and curate, veto and annotate with your own hands. The plan belongs to both of you.",
@@ -306,6 +310,9 @@ const I18N = {
     why6: "Sonntags ist Ruhe. Gesetzlich. Kauf samstags ein oder verhungere stilvoll.",
     why7: "Nur Bargeld, sorry — das Faxgerät wärmt noch auf.",
     why8: "Zwei Weltkriege verloren, seitdem Überstunden gegen den dritten. Du bist willkommen.",
+    jobshead: "Jobs rund um dein neues Zuhause",
+    jobstotal: "Stellen in der offiziellen Datenbank",
+    jobsapply: "Ansehen ↗",
     how: "So funktioniert's",
     how1: "Ein Umzug heißt: die komplette Alltags-Infrastruktur neu aufbauen — Supermarkt, Arzt, Zahnarzt, Friseur, Bank — an einem Ort, den du noch nicht kennst. Allein bedeutet das dreißig Browser-Tabs; es dem Agenten allein zu überlassen heißt, dass über deinen Alltag ohne dich entschieden wird.",
     how2: "Diese Seite ist für euch beide gebaut: Dein KI-Agent bedient sie über WebMCP-Tools (80+ Branchen parallel durchsuchen, den Plan füllen, deine Notizen zurücklesen), während du alles live auf der Seite siehst — und selbst kuratierst, vetost und kommentierst. Der Plan gehört euch gemeinsam.",
@@ -333,6 +340,7 @@ const state = {
   shortlist: [],          // {id, slug, label, emoji, name, city, distance_km, phone, website, lat, lon, note, by}
   categories: [],
   selected: new Set(),
+  jobs: null,
 };
 let map, markerLayer;
 let nextId = 1;
@@ -430,6 +438,24 @@ function renderShortlist(flashId) {
     box.appendChild(el);
   }
   renderMap();
+}
+
+function renderJobs(data) {
+  state.jobs = data;
+  const box = document.getElementById("jobs");
+  const jobs = (data && data.jobs) || [];
+  if (!jobs.length) { box.innerHTML = ""; box.hidden = true; return; }
+  box.hidden = false;
+  let html = '<div class="cathead">💼 ' + t("jobshead") + ' <span style="color:var(--muted);font-weight:400">(' +
+    (data.total || jobs.length).toLocaleString() + " " + t("jobstotal") + ')</span></div><ul class="results">';
+  for (const j of jobs) {
+    html += '<li class="result"><div><div>' + esc(j.title) + "</div>" +
+      '<div class="meta">' + esc(j.employer || "") + (j.city ? " · " + esc(j.city) : "") +
+      (j.salary ? " · " + esc(j.salary) : "") + (j.homeoffice ? " · 🏠 Home office" : "") + "</div></div>" +
+      '<a class="add" style="text-decoration:none" href="' + esc(j.url) + '" target="_blank" rel="noopener">' +
+      t("jobsapply") + "</a></li>";
+  }
+  box.innerHTML = html + "</ul>" + '<p class="hint">' + esc(data.source || "") + "</p>";
 }
 
 function renderMap() {
@@ -661,6 +687,39 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
       it.note = note; saveLocal(); renderShortlist(id);
       return T({ ok: true });
     },
+  });
+
+  mc.registerTool({
+    name: "find_jobs",
+    description: "Search real job openings around the configured PLZ via the OFFICIAL German Federal " +
+      "Employment Agency (Bundesagentur fuer Arbeit) API. Returns title, employer, city, salary range " +
+      "when stated, home-office flag and an official application link per job, plus the total count. " +
+      "Use 'what' for a free-text role query (e.g. 'python developer', 'nurse'). Requires set_home_plz. Read-only.",
+    inputSchema: { type: "object", properties: {
+      what: { type: "string", description: "Free-text job/role query; empty returns all jobs nearby" },
+      limit: { type: "integer", minimum: 1, maximum: 20, description: "Max results (default 5)" },
+      radius: { type: "integer", minimum: 5, maximum: 200, description: "Search radius in km (default 25)" },
+    } },
+    annotations: { readOnlyHint: true },
+    execute: async ({ what, limit, radius }) => {
+      if (!state.plz) return T("Error: call set_home_plz first.");
+      const p = new URLSearchParams({ plz: state.plz, limit: limit || 5, radius: radius || 25 });
+      if (what) p.set("what", what);
+      const data = await api("/api/jobs?" + p);
+      renderJobs(data);
+      return T(data);
+    },
+  });
+
+  mc.registerTool({
+    name: "get_paperwork_checklist",
+    description: "Return the German bureaucracy starter pack: the ordered official steps after moving " +
+      "(Anmeldung, tax ID, health insurance, bank account, Kindergeld child benefit, Buergergeld, " +
+      "broadcasting fee) with official government links only. Use when the user asks about paperwork, " +
+      "registration, benefits or 'what do I need to do after moving'. Read-only, static data.",
+    inputSchema: { type: "object", properties: {} },
+    annotations: { readOnlyHint: true },
+    execute: async () => T(await api("/api/paperwork")),
   });
 
   mc.registerTool({

@@ -60,10 +60,15 @@ not exist without WebMCP.
 
 ## How we implemented WebMCP
 
-- **9 imperative tools** via `document.modelContext.registerTool`:
+- **11 imperative tools** via `document.modelContext.registerTool`:
   `list_categories`, `set_home_plz`, `find_nearby`, `generate_starter_plan`,
   `add_to_shortlist`, `remove_from_shortlist`, `get_shortlist`, `set_note`,
-  `export_plan`. Every tool has a typed JSON schema with per-property
+  `find_jobs`, `get_paperwork_checklist`, `export_plan`.
+  `find_jobs` searches real openings via the **official Federal Employment
+  Agency (Bundesagentur fuer Arbeit) API** — home, essentials AND a job in
+  one shared session; `get_paperwork_checklist` hands the agent the ordered
+  official bureaucracy steps (Anmeldung, tax ID, Kindergeld, Buergergeld …)
+  with government links only. Every tool has a typed JSON schema with per-property
   descriptions and explicit `required` lists; read paths carry
   `readOnlyHint`, and `get_shortlist` carries `untrustedContentHint`
   because it returns human-written notes.
@@ -116,8 +121,10 @@ suchen). Voice: "My edits and notes are part of the shared state. The agent
 reads them back. Purple is the agent's work, blue is mine — the plan
 belongs to both of us."
 
-**1:30–2:10 — Tiefe zeigen.** Kurz: Agent fragt *"Find me 3 yoga studios
-nearby and add the best rated one"* → `find_nearby` + `add_to_shortlist`.
+**1:30–2:10 — Tiefe zeigen.** Agent fragen: *"Now find me python developer
+jobs nearby"* → `find_jobs` zeigt echte Stellen (offizielle Bundesagentur-
+für-Arbeit-API!) mit Gehaltsspannen und Bewerbungslinks auf der Seite.
+Dann: *"What paperwork do I need?"* → `get_paperwork_checklist`.
 Dann `export_plan`: Agent liefert den fertigen Markdown-Plan im Chat.
 Voice: "Nine imperative tools with typed schemas and honest annotations,
 plus a declarative form tool — and every tool shares its code with the

@@ -28,6 +28,36 @@ with open(os.path.join(HERE, "index.html"), encoding="utf-8") as f:
     INDEX_HTML = f.read()
 
 # Grundversorgungs-Set für den Ein-Klick-Starterplan
+# Offizieller Papierkram nach dem Umzug — Links auf die echten Behoerdenwege.
+PAPERWORK = {
+    "title": "German paperwork starter pack (in rough order)",
+    "steps": [
+        {"step": 1, "name": "Anmeldung (address registration)",
+         "note": "Register your address at the local Buergeramt within 14 days of moving in. Book the appointment EARLY.",
+         "url": "https://www.bmi.bund.de/EN/topics/administrative-reform/register/register-node.html"},
+        {"step": 2, "name": "Steuer-ID (tax ID)",
+         "note": "Arrives by post automatically after Anmeldung. Your employer needs it.",
+         "url": "https://www.bzst.de/EN/Private_individuals/Tax_identification_number/tax_identification_number_node.html"},
+        {"step": 3, "name": "Health insurance (Krankenversicherung)",
+         "note": "Mandatory. Pick a public insurer (gesetzliche Kasse) before your first working day.",
+         "url": "https://www.krankenkassen.de/gesetzliche-krankenkassen/krankenkassen-liste/"},
+        {"step": 4, "name": "Bank account",
+         "note": "Needed for salary and rent. Many banks accept passport + Anmeldung certificate.",
+         "url": "https://www.bafin.de/EN/Verbraucher/Bank/Produkte/Basiskonto/basiskonto_node_en.html"},
+        {"step": 5, "name": "Kindergeld (child benefit)",
+         "note": "About 255 EUR per child per month via the Familienkasse — apply online.",
+         "url": "https://www.arbeitsagentur.de/en/family-and-children"},
+        {"step": 6, "name": "Buergergeld (citizen's benefit)",
+         "note": "If you need support while job hunting — apply at your local Jobcenter (jobcenter.digital).",
+         "url": "https://www.jobcenter.digital/"},
+        {"step": 7, "name": "Rundfunkbeitrag (broadcasting fee)",
+         "note": "Yes, it finds you automatically. 18.36 EUR/month per household. Resistance is futile.",
+         "url": "https://www.rundfunkbeitrag.de/"},
+    ],
+    "source": "Official links only (bund.de ecosystem). No affiliate, no middlemen.",
+}
+
+
 # Expat-getestet: erst wohnen (hotel/immobilienmakler/umzug/moebel), dann
 # Alltag (supermarkt..friseur), dann der deutsche Endgegner (steuerberater).
 ESSENTIALS = ["hotel", "immobilienmakler", "umzugsunternehmen", "moebelhaus",
@@ -224,6 +254,19 @@ class Handler(BaseHTTPRequestHandler):
                             {"name": "limit", "in": "query", "schema": {"type": "integer", "maximum": 20}}],
                         "responses": {"200": {"description": "Distance-sorted providers"},
                                       "400": {"description": "Missing parameters"}}}},
+                    "/api/jobs": {"get": {"operationId": "searchJobs",
+                        "summary": "Job openings around a PLZ (official Bundesagentur fuer Arbeit data)",
+                        "parameters": [
+                            {"name": "plz", "in": "query", "required": True, "schema": {"type": "string", "pattern": "^[0-9]{5}$"}},
+                            {"name": "what", "in": "query", "schema": {"type": "string", "description": "free-text job query, e.g. 'python developer'"}},
+                            {"name": "limit", "in": "query", "schema": {"type": "integer", "maximum": 20}},
+                            {"name": "radius", "in": "query", "schema": {"type": "integer", "maximum": 200, "description": "km, default 25"}}],
+                        "responses": {"200": {"description": "Job openings with salary ranges and official detail links"},
+                                      "400": {"description": "Missing parameters"},
+                                      "502": {"description": "Upstream API unavailable"}}}},
+                    "/api/paperwork": {"get": {"operationId": "getPaperwork",
+                        "summary": "German paperwork starter pack with official links",
+                        "responses": {"200": {"description": "Ordered checklist"}}}},
                     "/api/essentials": {"get": {"operationId": "searchEssentials",
                         "summary": "Many categories in parallel around a PLZ",
                         "parameters": [
@@ -265,6 +308,59 @@ class Handler(BaseHTTPRequestHandler):
             self._send({"plz": plz, "categories": results})
             return
 
+        if path == "/api/jobs":
+            plz = (q.get("plz") or [""])[0]
+            what = (q.get("what") or [""])[0]
+            limit = min(int((q.get("limit") or ["5"])[0]), 20)
+            radius = min(int((q.get("radius") or ["25"])[0]), 200)
+            if not plz:
+                self._send({"error": "plz ist Pflicht"}, status=400)
+                return
+            # Offizielle Jobsuche-API der Bundesagentur fuer Arbeit
+            # (bund.dev / bundesAPI, oeffentlicher Key "jobboerse-jobsuche")
+            params = {"wo": plz, "umkreis": str(radius), "size": str(limit)}
+            if what:
+                params["was"] = what
+            url = ("https://rest.arbeitsagentur.de/jobboerse/jobsuche-service"
+                   "/pc/v6/jobs?" + urllib.parse.urlencode(params))
+            try:
+                req = urllib.request.Request(url, headers={
+                    "X-API-Key": "jobboerse-jobsuche",
+                    "User-Agent": "movetogermany.lol/1.0"})
+                with urllib.request.urlopen(req, timeout=15) as r:
+                    data = json.load(r)
+            except Exception as exc:
+                self._send({"error": "Bundesagentur-API nicht erreichbar: " + str(exc)[:120]},
+                           status=502)
+                return
+            jobs = []
+            for s in data.get("ergebnisliste", [])[:limit]:
+                lok = (s.get("stellenlokationen") or [{}])[0]
+                adr = lok.get("adresse") or {}
+                salary = None
+                if s.get("gehaltsspanneVon"):
+                    salary = (f"{int(s['gehaltsspanneVon']):,} – "
+                              f"{int(s.get('gehaltsspanneBis') or s['gehaltsspanneVon']):,} EUR/Jahr")
+                jobs.append({
+                    "title": s.get("stellenangebotsTitel"),
+                    "employer": s.get("firma"),
+                    "city": adr.get("ort"), "plz": adr.get("plz"),
+                    "lat": lok.get("breite"), "lon": lok.get("laenge"),
+                    "salary": salary,
+                    "homeoffice": s.get("homeofficemoeglich"),
+                    "career_changer_ok": s.get("quereinstiegGeeignet"),
+                    "url": ("https://www.arbeitsagentur.de/jobsuche/jobdetail/"
+                            + urllib.parse.quote(s.get("referenznummer") or "")),
+                })
+            self._send({"plz": plz, "what": what or None,
+                        "total": data.get("maxErgebnisse"), "jobs": jobs,
+                        "source": "Bundesagentur für Arbeit (official Jobsuche API)"})
+            return
+
+        if path == "/api/paperwork":
+            self._send(PAPERWORK)
+            return
+
         if path == "/llms.txt":
             body = (
                 "# move to germany, lol — collaborative arrival planner\n\n"
@@ -280,10 +376,13 @@ class Handler(BaseHTTPRequestHandler):
                 "## API\n"
                 f"- [All categories](https://{DOMAIN}/api/categories): the 80+ categories of the network\n"
                 f"- [Search one category](https://{DOMAIN}/api/search?cat=supermarkt&plz=10115&limit=5): distance-sorted providers\n"
-                f"- [Essentials in parallel](https://{DOMAIN}/api/essentials?plz=10115): many categories at once\n\n"
+                f"- [Essentials in parallel](https://{DOMAIN}/api/essentials?plz=10115): many categories at once\n"
+                f"- [Job search](https://{DOMAIN}/api/jobs?plz=10115&what=developer): official Bundesagentur fuer Arbeit openings\n"
+                f"- [Paperwork starter pack](https://{DOMAIN}/api/paperwork): ordered official bureaucracy steps\n\n"
                 "## WebMCP tools on the page\n"
                 "list_categories, set_home_plz, find_nearby, generate_starter_plan, add_to_shortlist, "
-                "remove_from_shortlist, get_shortlist, set_note, export_plan — registered via "
+                "remove_from_shortlist, get_shortlist, set_note, find_jobs, get_paperwork_checklist, "
+                "export_plan — registered via "
                 "document.modelContext with typed JSON schemas and honest annotations.\n\n"
                 "## Source\n"
                 "- [GitHub (MIT)](https://github.com/shufflethis/neu-hier): full source, zero dependencies\n"
