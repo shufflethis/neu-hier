@@ -121,7 +121,9 @@ The app sits on the "in meiner Nähe" network we operate: **80+ live,
 agent-readable German business directories** (OpenStreetMap + Overture Maps
 data, distance-sorted per postal code, each with its own JSON API, MCP
 endpoint and llms.txt — independently scored 97/100 on webmcp-tool.com's
-Agent Readiness Check). `server.py` (stdlib Python, zero dependencies)
+Agent Readiness Check; the app itself measures 96/100, grade A / Gold,
+with an Adoption score of 30/32 — per the check operators "practically
+the only site out there with real adoption"). `server.py` (stdlib Python, zero dependencies)
 aggregates them in parallel; judges can clone the repo and run it anywhere —
 it falls back to the public APIs automatically.
 
