@@ -26,6 +26,10 @@ This page is a **shared workspace** for both:
 - The human **vetoes, swaps and writes notes** right into the entries.
 - The agent **reads the notes back** (`get_shortlist`) and acts on them.
 - A live **activity feed** shows who did what (🤖 / 🧑).
+- A shared **arrival persona** ("Who's arriving?") that both sides edit:
+  a dog adds the vet, kids add tutoring, "English only" reshapes outreach
+  drafts, the profession prefills the job search — "for me" finally means
+  someone specific.
 - The whole co-authored plan **serializes into a share link** — send it to
   your partner and *their* agent continues where yours left off.
 - `find_jobs` searches real openings via the **official Federal Employment
@@ -44,7 +48,7 @@ This page is a **shared workspace** for both:
 
 ## WebMCP implementation
 
-**14 imperative tools** via `document.modelContext.registerTool` — typed
+**16 imperative tools** via `document.modelContext.registerTool` — typed
 JSON schemas, per-property descriptions, explicit `required` lists,
 `readOnlyHint` on read paths, `untrustedContentHint` where tools return
 human-written notes:
@@ -52,6 +56,7 @@ human-written notes:
 | Tool | Notes |
 |---|---|
 | `list_categories` | read-only; German + English labels for slug mapping |
+| `get_profile` / `set_profile` | the shared **arrival persona** — the agent interviews the human, stores household/pet/language/mobility/profession, and everything downstream personalizes |
 | `set_home_plz` | page state |
 | `find_nearby` | one category, renders live |
 | `generate_starter_plan` | 15 categories in parallel → closest per category into the plan |

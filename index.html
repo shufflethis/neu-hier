@@ -109,6 +109,14 @@
   .feed-item { font-size: .8rem; color: var(--muted); padding: 3px 0; border-left: 3px solid var(--line); padding-left: 8px; margin-bottom: 3px; }
   .feed-item.agent { border-left-color: var(--agent); }
   .feed-item.human { border-left-color: var(--accent); }
+  .profile-box { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 10px; }
+  .profile-box .prow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .profile-box .plabel { font-size: .8rem; color: var(--muted); min-width: 86px; }
+  .pchip { padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: #fff;
+           font-size: .8rem; cursor: pointer; user-select: none; }
+  .pchip.on { background: var(--agent); color: #fff; border-color: var(--agent); }
+  .profile-box input.pwork { flex: 1; min-width: 140px; padding: 5px 10px; font-size: .8rem;
+                             border: 1px solid var(--line); border-radius: 8px; }
   .prompts { margin-top: 10px; display: grid; gap: 6px; }
   .prompts button { text-align: left; font-weight: 500; font-size: .85rem; background: #fdf6e3;
                     color: var(--ink); border: 1px solid #eadfbe; padding: 8px 12px; }
@@ -144,6 +152,7 @@
       <button onclick="copyPrompt(this)">💬 "I'm moving to Berlin, postal code 10115 — set me up with the essentials."</button>
       <button onclick="copyPrompt(this)">💬 "Compare the hairdressers and pick the best rated one for me."</button>
       <button onclick="copyPrompt(this)">💬 "Find me python developer jobs nearby and check my notes on the plan."</button>
+      <button onclick="copyPrompt(this)">💬 "Interview me, fill in my arrival profile, then rebuild the plan for us."</button>
     </div>
     <p class="hint" data-i18n="promptshint" style="margin-top:6px;">Try these with your agent — tap to copy.</p>
   </div>
@@ -216,6 +225,11 @@
       </form>
       <p class="hint" id="plz-hint" data-i18n="hint"></p>
       <p class="hint" id="plz-error" hidden data-i18n="plzerr"></p>
+      <div class="profile-box" id="profile-box">
+        <div style="font-weight:650;font-size:.95rem">👤 <span data-i18n="profhead">Who's arriving?</span>
+          <span class="hint" style="display:inline;font-weight:400" data-i18n="profhint">— your agent reads and fills this in too</span></div>
+        <div id="profile-body"></div>
+      </div>
       <div class="chips" id="chips" aria-label="Categories"></div>
       <div id="map" role="img" aria-label="Map of found providers"></div>
       <div id="jobs" class="catblock flash" hidden></div>
@@ -305,6 +319,17 @@ const I18N = {
     why6: "Sundays are silent. Legally. Buy your groceries on Saturday or perish.",
     why7: "Cash only, sorry — the fax machine is still warming up.",
     why8: "Lost two world wars, working overtime to help avoid the third. You're welcome here.",
+    profhead: "Who's arriving?",
+    profhint: "— your agent reads and fills this in too",
+    pf_household: "Household", pf_pet: "Pet", pf_languages: "Language", pf_mobility: "Getting around",
+    pf_work: "Profession", pf_workph: "e.g. python developer — prefills the job search",
+    pf_summary: "Profile",
+    pv_solo: "Just me", pv_couple: "Couple", pv_family: "Family + kids",
+    pv_none: "No pet", pv_dog: "Dog 🐕", pv_cat: "Cat 🐈",
+    pv_en_only: "English only", pv_de_ok: "German is fine",
+    pv_walk: "On foot", pv_bike: "Bike", pv_car: "Car",
+    actprof: "Updated the arrival profile",
+    actprofagent: "Updated the arrival profile (after asking)",
     book: "Book online",
     bookhead: "Bookable right now",
     actbook: "Found {x} bookable providers",
@@ -380,6 +405,17 @@ const I18N = {
     why6: "Sonntags ist Ruhe. Gesetzlich. Kauf samstags ein oder verhungere stilvoll.",
     why7: "Nur Bargeld, sorry — das Faxgerät wärmt noch auf.",
     why8: "Zwei Weltkriege verloren, seitdem Überstunden gegen den dritten. Du bist willkommen.",
+    profhead: "Wer kommt an?",
+    profhint: "— dein Agent liest und pflegt das mit",
+    pf_household: "Haushalt", pf_pet: "Haustier", pf_languages: "Sprache", pf_mobility: "Unterwegs",
+    pf_work: "Beruf", pf_workph: "z. B. Python-Entwicklerin — füllt die Jobsuche vor",
+    pf_summary: "Profil",
+    pv_solo: "Nur ich", pv_couple: "Zu zweit", pv_family: "Familie + Kinder",
+    pv_none: "Kein Haustier", pv_dog: "Hund 🐕", pv_cat: "Katze 🐈",
+    pv_en_only: "Nur Englisch", pv_de_ok: "Deutsch geht",
+    pv_walk: "Zu Fuß", pv_bike: "Fahrrad", pv_car: "Auto",
+    actprof: "Ankunftsprofil aktualisiert",
+    actprofagent: "Ankunftsprofil aktualisiert (nach Rückfrage)",
     book: "Online buchen",
     bookhead: "Direkt online buchbar",
     actbook: "{x} buchbare Anbieter gefunden",
@@ -429,7 +465,7 @@ function setLang(l) {
   document.getElementById("plz").placeholder = t("plzph");
   document.getElementById("lang-en").className = lang === "en" ? "on" : "";
   document.getElementById("lang-de").className = lang === "de" ? "on" : "";
-  renderChips(); renderResults(false); renderShortlist(); renderActivity();
+  renderChips(); renderProfile(); renderResults(false); renderShortlist(); renderActivity();
 }
 
 /* ============ State ============ */
@@ -442,7 +478,64 @@ const state = {
   jobs: null,
   catmap: {},
   activity: [],
+  profile: { household: null, pet: null, languages: null, mobility: null, work: "" },
 };
+
+const PROFILE_FIELDS = {
+  household: ["solo", "couple", "family"],
+  pet: ["none", "dog", "cat"],
+  languages: ["en_only", "de_ok"],
+  mobility: ["walk", "bike", "car"],
+};
+
+function renderProfile() {
+  const box = document.getElementById("profile-body");
+  if (!box) return;
+  let html = "";
+  for (const field of Object.keys(PROFILE_FIELDS)) {
+    html += '<div class="prow"><span class="plabel">' + t("pf_" + field) + "</span>";
+    for (const val of PROFILE_FIELDS[field]) {
+      const on = state.profile[field] === val ? " on" : "";
+      html += '<span class="pchip' + on + '" role="button" aria-pressed="' + (!!on) +
+        '" onclick="setProfileUI(\'' + field + "','" + val + '\')">' + t("pv_" + val) + "</span>";
+    }
+    html += "</div>";
+  }
+  html += '<div class="prow"><span class="plabel">' + t("pf_work") + "</span>" +
+    '<input class="pwork" id="pwork" placeholder="' + esc(t("pf_workph")) + '" value="' +
+    esc(state.profile.work || "") + '" onchange="setProfileUI(\'work\', this.value)"></div>';
+  box.innerHTML = html;
+}
+
+function applyProfileToSelection() {
+  const p = state.profile;
+  const add = [];
+  if (p.pet === "dog" || p.pet === "cat") add.push("tierklinik", "zoohandlung");
+  if (p.household === "family") add.push("krankenhaus", "nachhilfe");
+  if (p.mobility === "car") add.push("tankstelle", "autowerkstatt");
+  if (p.mobility === "bike") add.push("fahrradwerkstatt");
+  let changed = false;
+  for (const s of add) if (state.catmap[s] && !state.selected.has(s)) { state.selected.add(s); changed = true; }
+  if (changed) renderChips();
+  return add;
+}
+
+function setProfileUI(field, value) {
+  state.profile[field] = (field !== "work" && state.profile[field] === value) ? null : value;
+  saveLocal(); renderProfile(); applyProfileToSelection();
+  addActivity("human", t("actprof"));
+}
+
+function profileSummary() {
+  const p = state.profile;
+  const bits = [];
+  if (p.household) bits.push(t("pv_" + p.household));
+  if (p.pet && p.pet !== "none") bits.push(t("pv_" + p.pet));
+  if (p.languages) bits.push(t("pv_" + p.languages));
+  if (p.mobility) bits.push(t("pv_" + p.mobility));
+  if (p.work) bits.push(p.work);
+  return bits.join(" · ");
+}
 
 function addActivity(who, text) {
   state.activity.unshift({ who, text, at: new Date().toLocaleTimeString() });
@@ -463,7 +556,7 @@ function copyPrompt(btn) {
   setTimeout(() => { btn.textContent = t0; }, 1200);
 }
 function sharePlan(ev) {
-  const payload = { plz: state.plz, shortlist: state.shortlist.map(x => ({
+  const payload = { plz: state.plz, profile: state.profile, shortlist: state.shortlist.map(x => ({
     slug: x.slug, name: x.name, city: x.city, distance_km: x.distance_km,
     phone: x.phone, email: x.email, website: x.website, lat: x.lat, lon: x.lon,
     booking_url: x.booking_url, note: x.note, by: x.by })) };
@@ -478,6 +571,7 @@ function loadSharedPlan() {
   try {
     const d = JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(6)))));
     state.plz = d.plz || null;
+    if (d.profile) state.profile = Object.assign(state.profile, d.profile);
     state.shortlist = (d.shortlist || []).map(x => ({ id: nextId++, emoji: "📍", label: x.slug, ...x }));
     if (state.plz) document.getElementById("plz").value = state.plz;
     addActivity("human", t("sharedloaded"));
@@ -489,7 +583,8 @@ let nextId = 1;
 
 function saveLocal() {
   try { localStorage.setItem("neuhier", JSON.stringify({
-    plz: state.plz, shortlist: state.shortlist, selected: [...state.selected], nextId })); } catch (e) {}
+    plz: state.plz, shortlist: state.shortlist, selected: [...state.selected],
+    profile: state.profile, nextId })); } catch (e) {}
 }
 function loadLocal() {
   try {
@@ -499,6 +594,7 @@ function loadLocal() {
     state.plz = d.plz || null;
     state.shortlist = d.shortlist || [];
     state.selected = new Set(d.selected || []);
+    if (d.profile) state.profile = Object.assign(state.profile, d.profile);
     nextId = d.nextId || (state.shortlist.length + 1);
     if (state.plz) document.getElementById("plz").value = state.plz;
   } catch (e) {}
@@ -723,6 +819,8 @@ function setNoteUI(id, note) {
 
 function planMarkdown() {
   const lines = [t("planheader") + (state.plz ? " — PLZ " + state.plz : ""), ""];
+  const ps = profileSummary();
+  if (ps) { lines.push("_" + t("pf_summary") + ": " + ps + "_", ""); }
   for (const it of state.shortlist) {
     lines.push("- **" + it.emoji + " " + it.name + "** (" + catLabel(it.slug, it.label) + ")" +
       (it.city ? ", " + it.city : "") +
@@ -736,14 +834,22 @@ function planMarkdown() {
 }
 
 function outreachDraft(it, language) {
+  const p = state.profile;
+  const who_en = p.household === "family" ? "We're a family moving to the area"
+    : p.household === "couple" ? "My partner and I are moving to the area"
+    : "I'm moving to the area";
+  const who_de = p.household === "family" ? "Wir ziehen als Familie in die Gegend"
+    : p.household === "couple" ? "Wir ziehen zu zweit in die Gegend"
+    : "Ich ziehe gerade in die Gegend";
   const en = "Hello " + it.name + ",\n\n" +
-    "I'm moving to the area (postal code " + (state.plz || "…") + ") and I'm looking for a " +
+    who_en + " (postal code " + (state.plz || "…") + ") and I'm looking for a " +
     (state.catmap[it.slug] ? state.catmap[it.slug].label_en.toLowerCase() : it.slug) + ".\n" +
-    "Do you take new customers, and is communication in English possible?\n" +
+    (p.languages === "de_ok" ? "Do you take new customers?\n"
+      : "Do you take new customers, and is communication in English possible?\n") +
     (it.note ? "One more thing: " + it.note + "\n" : "") +
     "\nBest regards";
   const de = "Guten Tag " + it.name + ",\n\n" +
-    "ich ziehe gerade in die Gegend (PLZ " + (state.plz || "…") + ") und suche " +
+    who_de + " (PLZ " + (state.plz || "…") + ") und ich suche " +
     (state.catmap[it.slug] ? "einen Anbieter: " + state.catmap[it.slug].label : it.slug) + ".\n" +
     "Nehmen Sie neue Kundinnen und Kunden an?\n" +
     (it.note ? "Noch eine Frage: " + it.note + "\n" : "") +
@@ -793,6 +899,41 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
   });
 
   mc.registerTool({
+    name: "get_profile",
+    description: "Read the shared arrival profile: household (solo/couple/family), pet, language needs " +
+      "(en_only/de_ok), mobility (walk/bike/car) and profession. Use it to personalize every decision — " +
+      "categories, job queries, outreach drafts. Fields can be null; then ASK the user and store answers " +
+      "via set_profile. Read-only.",
+    inputSchema: { type: "object", properties: {} },
+    annotations: { readOnlyHint: true, untrustedContentHint: true },
+    execute: async () => T({ profile: state.profile, summary: profileSummary() || null }),
+  });
+
+  mc.registerTool({
+    name: "set_profile",
+    description: "Update the shared arrival profile (partial update; only provided fields change). " +
+      "The user sees every change immediately, and relevant categories are auto-added (pet → vet & pet " +
+      "store, family → hospital & tutoring, car → gas station & repair shop, bike → bike repair). " +
+      "Use after interviewing the user; never invent values.",
+    inputSchema: { type: "object", properties: {
+      household: { type: "string", enum: ["solo", "couple", "family"], description: "Who is moving" },
+      pet: { type: "string", enum: ["none", "dog", "cat"], description: "Pet in the household" },
+      languages: { type: "string", enum: ["en_only", "de_ok"], description: "en_only = needs English communication" },
+      mobility: { type: "string", enum: ["walk", "bike", "car"], description: "Main way of getting around" },
+      work: { type: "string", description: "Profession/role, used to prefill job search (e.g. 'python developer')" },
+    } },
+    execute: async (args) => {
+      for (const k of ["household", "pet", "languages", "mobility", "work"]) {
+        if (args && args[k] !== undefined) state.profile[k] = args[k];
+      }
+      saveLocal(); renderProfile();
+      const added = applyProfileToSelection();
+      A(t("actprofagent"));
+      return T({ ok: true, profile: state.profile, categories_added: added });
+    },
+  });
+
+  mc.registerTool({
     name: "set_home_plz",
     description: "Set the user's new home postal code (German PLZ) — the center of all searches. " +
       "Call generate_starter_plan or find_nearby afterwards. Changes page state.",
@@ -833,6 +974,7 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     } },
     execute: async ({ categories }) => {
       if (!state.plz) return T("Error: call set_home_plz first.");
+      applyProfileToSelection();
       const data = await fetchEssentials(categories && categories.length ? categories : [...state.selected]);
       let added = 0;
       for (const cat of data.categories) {
@@ -967,7 +1109,8 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     execute: async ({ what, limit, radius }) => {
       if (!state.plz) return T("Error: call set_home_plz first.");
       const p = new URLSearchParams({ plz: state.plz, limit: limit || 5, radius: radius || 25 });
-      if (what) p.set("what", what);
+      const q = what || state.profile.work;
+      if (q) p.set("what", q);
       const data = await api("/api/jobs?" + p);
       renderJobs(data);
       A(t("actjobs").replace("{x}", (data.total || 0).toLocaleString()));
@@ -1057,7 +1200,7 @@ function renderCompare(category) {
   state.categories = cats.categories;
   state.catmap = Object.fromEntries(cats.categories.map(c => [c.slug, c]));
   if (!state.selected.size) state.selected = new Set(cats.essentials);
-  renderChips();
+  renderChips(); renderProfile(); applyProfileToSelection();
   map = L.map("map", { scrollWheelZoom: false }).setView([51.16, 10.45], 6);
   L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",
     { attribution: '© OpenStreetMap contributors' }).addTo(map);

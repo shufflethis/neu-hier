@@ -60,7 +60,7 @@ not exist without WebMCP.
 
 ## How we implemented WebMCP
 
-- **14 imperative tools** via `document.modelContext.registerTool`:
+- **16 imperative tools** via `document.modelContext.registerTool`:
   `list_categories`, `set_home_plz`, `find_nearby`, `generate_starter_plan`,
   `add_to_shortlist`, `remove_from_shortlist`, `get_shortlist`, `set_note`,
   `draft_outreach`, `find_jobs`, `get_paperwork_checklist`, plus two
@@ -84,6 +84,12 @@ not exist without WebMCP.
   state machine with two front doors (mouse and model).
 - A live **activity feed** on the page shows who did what (🤖 agent /
   🧑 human), so the collaboration is visible, auditable and demo-able.
+- A shared **arrival persona** (`get_profile`/`set_profile`): the agent
+  interviews the human and stores household, pet, language needs, mobility
+  and profession in page state both sides see. A dog adds the vet to the
+  plan, kids add tutoring, "English only" reshapes the outreach drafts,
+  the profession prefills the job search — personalization as shared
+  state, not hidden context.
 - **Share link**: the whole co-authored plan serializes into a URL — send it
   to your partner, and their agent continues where yours left off.
 - Three **tap-to-copy example prompts** on the page get first-time visitors
