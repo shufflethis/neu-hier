@@ -56,7 +56,7 @@ human-written notes:
 | Tool | Notes |
 |---|---|
 | `list_categories` | read-only; German + English labels for slug mapping |
-| `get_profile` / `set_profile` | the shared **arrival persona** — the agent interviews the human, stores household/pet/language/mobility/profession, and everything downstream personalizes |
+| `get_profile` / `set_profile` | the shared **arrival persona** — the agent fills it from what it already knows about its user, asks only for the gaps, and everything downstream personalizes |
 | `set_home_plz` | page state |
 | `find_nearby` | one category, renders live |
 | `generate_starter_plan` | 15 categories in parallel → closest per category into the plan |

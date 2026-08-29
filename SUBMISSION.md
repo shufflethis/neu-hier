@@ -84,12 +84,15 @@ not exist without WebMCP.
   state machine with two front doors (mouse and model).
 - A live **activity feed** on the page shows who did what (🤖 agent /
   🧑 human), so the collaboration is visible, auditable and demo-able.
-- A shared **arrival persona** (`get_profile`/`set_profile`): the agent
-  interviews the human and stores household, pet, language needs, mobility
-  and profession in page state both sides see. A dog adds the vet to the
-  plan, kids add tutoring, "English only" reshapes the outreach drafts,
-  the profession prefills the job search — personalization as shared
-  state, not hidden context.
+- A shared **arrival persona** (`get_profile`/`set_profile`) — and this is
+  WebMCP's quiet superpower made visible: **the visitor's agent already
+  knows its user**. It fills household, pet, language needs, mobility and
+  profession from its own memory, confirms them on the page, and asks only
+  for the gaps. The site never collects anything; the user's context stays
+  in their agent, which shares exactly what is relevant here. A dog adds
+  the vet to the plan, kids add tutoring, "English only" reshapes the
+  outreach drafts, the profession prefills the job search —
+  privacy-preserving personalization as shared state.
 - **Share link**: the whole co-authored plan serializes into a URL — send it
   to your partner, and their agent continues where yours left off.
 - Three **tap-to-copy example prompts** on the page get first-time visitors

@@ -152,7 +152,7 @@
       <button onclick="copyPrompt(this)">💬 "I'm moving to Berlin, postal code 10115 — set me up with the essentials."</button>
       <button onclick="copyPrompt(this)">💬 "Compare the hairdressers and pick the best rated one for me."</button>
       <button onclick="copyPrompt(this)">💬 "Find me python developer jobs nearby and check my notes on the plan."</button>
-      <button onclick="copyPrompt(this)">💬 "Interview me, fill in my arrival profile, then rebuild the plan for us."</button>
+      <button onclick="copyPrompt(this)">💬 "Fill in my arrival profile from what you already know about me, ask me about the rest, then rebuild the plan."</button>
     </div>
     <p class="hint" data-i18n="promptshint" style="margin-top:6px;">Try these with your agent — tap to copy.</p>
   </div>
@@ -320,7 +320,7 @@ const I18N = {
     why7: "Cash only, sorry — the fax machine is still warming up.",
     why8: "Lost two world wars, working overtime to help avoid the third. You're welcome here.",
     profhead: "Who's arriving?",
-    profhint: "— your agent reads and fills this in too",
+    profhint: "— your agent fills this from what it already knows about you, and asks only for the gaps",
     pf_household: "Household", pf_pet: "Pet", pf_languages: "Language", pf_mobility: "Getting around",
     pf_work: "Profession", pf_workph: "e.g. python developer — prefills the job search",
     pf_summary: "Profile",
@@ -406,7 +406,7 @@ const I18N = {
     why7: "Nur Bargeld, sorry — das Faxgerät wärmt noch auf.",
     why8: "Zwei Weltkriege verloren, seitdem Überstunden gegen den dritten. Du bist willkommen.",
     profhead: "Wer kommt an?",
-    profhint: "— dein Agent liest und pflegt das mit",
+    profhint: "— dein Agent füllt das aus dem, was er über dich weiß, und fragt nur die Lücken nach",
     pf_household: "Haushalt", pf_pet: "Haustier", pf_languages: "Sprache", pf_mobility: "Unterwegs",
     pf_work: "Beruf", pf_workph: "z. B. Python-Entwicklerin — füllt die Jobsuche vor",
     pf_summary: "Profil",
@@ -902,8 +902,9 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     name: "get_profile",
     description: "Read the shared arrival profile: household (solo/couple/family), pet, language needs " +
       "(en_only/de_ok), mobility (walk/bike/car) and profession. Use it to personalize every decision — " +
-      "categories, job queries, outreach drafts. Fields can be null; then ASK the user and store answers " +
-      "via set_profile. Read-only.",
+      "categories, job queries, outreach drafts. For null fields, FIRST fill in what you already know " +
+      "about your user from your own memory/context (confirm it briefly), and ask only about genuine " +
+      "gaps — then store via set_profile. Read-only.",
     inputSchema: { type: "object", properties: {} },
     annotations: { readOnlyHint: true, untrustedContentHint: true },
     execute: async () => T({ profile: state.profile, summary: profileSummary() || null }),
@@ -914,7 +915,9 @@ function clearPlan() { state.shortlist = []; saveLocal(); renderShortlist(); }
     description: "Update the shared arrival profile (partial update; only provided fields change). " +
       "The user sees every change immediately, and relevant categories are auto-added (pet → vet & pet " +
       "store, family → hospital & tutoring, car → gas station & repair shop, bike → bike repair). " +
-      "Use after interviewing the user; never invent values.",
+      "Prefer what you already KNOW about your user (your memory/context) — mention what you filled in " +
+      "so they can correct it — and interview only for real gaps. Never guess; the profile stays on " +
+      "this page, share only what is relevant here.",
     inputSchema: { type: "object", properties: {
       household: { type: "string", enum: ["solo", "couple", "family"], description: "Who is moving" },
       pet: { type: "string", enum: ["none", "dog", "cat"], description: "Pet in the household" },
